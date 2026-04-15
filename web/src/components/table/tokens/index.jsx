@@ -25,6 +25,8 @@ import {
   Toast,
   Typography,
   Select,
+  Tabs,
+  TabPane,
 } from '@douyinfe/semi-ui';
 import {
   API,
@@ -37,6 +39,7 @@ import TokensTable from './TokensTable';
 import TokensActions from './TokensActions';
 import TokensFilters from './TokensFilters';
 import TokensDescription from './TokensDescription';
+import TokensEmployeeStats from './TokensEmployeeStats';
 import EditTokenModal from './modals/EditTokenModal';
 import { useTokensData } from '../../../hooks/tokens/useTokensData';
 import { useIsMobile } from '../../../hooks/common/useIsMobile';
@@ -49,6 +52,7 @@ function TokensPage() {
     openFluentNotificationRef.current?.(key),
   );
   const isMobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState('list');
   const latestRef = useRef({
     tokens: [],
     selectedKeys: [],
@@ -373,41 +377,58 @@ function TokensPage() {
           />
         }
         actionsArea={
-          <div className='flex flex-col md:flex-row justify-between items-center gap-2 w-full'>
-            <TokensActions
-              selectedKeys={selectedKeys}
-              setEditingToken={setEditingToken}
-              setShowEdit={setShowEdit}
-              batchCopyTokens={batchCopyTokens}
-              batchDeleteTokens={batchDeleteTokens}
-              copyText={copyText}
-              t={t}
-            />
-
-            <div className='w-full md:w-full lg:w-auto order-1 md:order-2'>
-              <TokensFilters
-                formInitValues={formInitValues}
-                setFormApi={setFormApi}
-                searchTokens={searchTokens}
-                loading={loading}
-                searching={searching}
+          activeTab === 'list' ? (
+            <div className='flex flex-col md:flex-row justify-between items-center gap-2 w-full'>
+              <TokensActions
+                selectedKeys={selectedKeys}
+                setEditingToken={setEditingToken}
+                setShowEdit={setShowEdit}
+                batchCopyTokens={batchCopyTokens}
+                batchDeleteTokens={batchDeleteTokens}
+                copyText={copyText}
                 t={t}
               />
+
+              <div className='w-full md:w-full lg:w-auto order-1 md:order-2'>
+                <TokensFilters
+                  formInitValues={formInitValues}
+                  setFormApi={setFormApi}
+                  searchTokens={searchTokens}
+                  loading={loading}
+                  searching={searching}
+                  t={t}
+                />
+              </div>
             </div>
-          </div>
+          ) : null
         }
-        paginationArea={createCardProPagination({
-          currentPage: tokensData.activePage,
-          pageSize: tokensData.pageSize,
-          total: tokensData.tokenCount,
-          onPageChange: tokensData.handlePageChange,
-          onPageSizeChange: tokensData.handlePageSizeChange,
-          isMobile: isMobile,
-          t: tokensData.t,
-        })}
+        paginationArea={
+          activeTab === 'list'
+            ? createCardProPagination({
+                currentPage: tokensData.activePage,
+                pageSize: tokensData.pageSize,
+                total: tokensData.tokenCount,
+                onPageChange: tokensData.handlePageChange,
+                onPageSizeChange: tokensData.handlePageSizeChange,
+                isMobile: isMobile,
+                t: tokensData.t,
+              })
+            : null
+        }
         t={tokensData.t}
       >
-        <TokensTable {...tokensData} />
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          style={{ marginBottom: 0 }}
+        >
+          <TabPane tab={t('令牌列表')} itemKey='list'>
+            <TokensTable {...tokensData} />
+          </TabPane>
+          <TabPane tab={t('员工用量汇总')} itemKey='stats'>
+            <TokensEmployeeStats tokens={tokensData.tokens} t={t} />
+          </TabPane>
+        </Tabs>
       </CardPro>
     </>
   );
