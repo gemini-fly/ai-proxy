@@ -97,6 +97,9 @@ const TopUp = () => {
     discount: {},
   });
 
+  // 对公账户信息
+  const [bankAccount, setBankAccount] = useState(null);
+
   const topUp = async () => {
     if (redemptionCode === '') {
       showInfo(t('请输入兑换码！'));
@@ -323,6 +326,11 @@ const TopUp = () => {
           amount_options: data.amount_options || [],
           discount: data.discount || {},
         });
+
+        // 对公账户信息
+        if (data.bank_account) {
+          setBankAccount(data.bank_account);
+        }
 
         // 处理支付方式
         let payMethods = data.pay_methods || [];
@@ -706,7 +714,7 @@ const TopUp = () => {
           </div>
 
           {/* 右侧信息区域 */}
-          <div className='lg:col-span-5'>
+          <div className='lg:col-span-5 space-y-6'>
             <InvitationCard
               t={t}
               userState={userState}
@@ -715,6 +723,62 @@ const TopUp = () => {
               affLink={affLink}
               handleAffLinkClick={handleAffLinkClick}
             />
+            {/* 对公账户信息卡片 */}
+            {bankAccount && (
+              <div
+                style={{
+                  background: 'var(--semi-color-bg-2)',
+                  border: '1px solid var(--semi-color-border)',
+                  borderRadius: '12px',
+                  padding: '20px',
+                }}
+              >
+                <div style={{ marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--semi-color-text-0)' }}>
+                    {t('对公汇款账户')}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {bankAccount.company_name && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: 'var(--semi-color-text-2)', fontSize: '13px', minWidth: '70px' }}>{t('收款方')}</span>
+                      <span style={{ color: 'var(--semi-color-text-0)', fontWeight: 500, textAlign: 'right' }}>{bankAccount.company_name}</span>
+                    </div>
+                  )}
+                  {bankAccount.bank_name && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: 'var(--semi-color-text-2)', fontSize: '13px', minWidth: '70px' }}>{t('开户银行')}</span>
+                      <span style={{ color: 'var(--semi-color-text-0)', fontWeight: 500, textAlign: 'right' }}>{bankAccount.bank_name}</span>
+                    </div>
+                  )}
+                  {bankAccount.account_no && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: 'var(--semi-color-text-2)', fontSize: '13px', minWidth: '70px' }}>{t('银行账号')}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ color: 'var(--semi-color-text-0)', fontWeight: 500, fontFamily: 'monospace', letterSpacing: '0.5px' }}>{bankAccount.account_no}</span>
+                        <span
+                          style={{ cursor: 'pointer', color: 'var(--semi-color-primary)', fontSize: '12px' }}
+                          onClick={async () => { await copy(bankAccount.account_no); showSuccess(t('账号已复制')); }}
+                        >
+                          {t('复制')}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {bankAccount.bank_branch && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: 'var(--semi-color-text-2)', fontSize: '13px', minWidth: '70px' }}>{t('开户支行')}</span>
+                      <span style={{ color: 'var(--semi-color-text-0)', fontWeight: 500, textAlign: 'right' }}>{bankAccount.bank_branch}</span>
+                    </div>
+                  )}
+                  {bankAccount.remark && (
+                    <div style={{ borderTop: '1px dashed var(--semi-color-border)', paddingTop: '10px', marginTop: '4px' }}>
+                      <span style={{ color: 'var(--semi-color-text-2)', fontSize: '12px' }}>{t('备注')}：{bankAccount.remark}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

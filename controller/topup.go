@@ -59,6 +59,19 @@ func GetTopUpInfo(c *gin.Context) {
 		"amount_options":      operation_setting.GetPaymentSetting().AmountOptions,
 		"discount":            operation_setting.GetPaymentSetting().AmountDiscount,
 	}
+
+	// 若启用对公账户，附加对公账户信息
+	bankAcct := operation_setting.GetBankAccountSetting()
+	if bankAcct.Enabled {
+		data["bank_account"] = gin.H{
+			"company_name": bankAcct.CompanyName,
+			"bank_name":    bankAcct.BankName,
+			"account_no":   bankAcct.AccountNo,
+			"bank_branch":  bankAcct.BankBranch,
+			"remark":       bankAcct.Remark,
+		}
+	}
+
 	common.ApiSuccess(c, data)
 }
 

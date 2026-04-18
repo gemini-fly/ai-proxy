@@ -26,9 +26,6 @@ import {
   showInfo,
   showSuccess,
   setStatusData,
-  prepareCredentialCreationOptions,
-  buildRegistrationResult,
-  isPasskeySupported,
   setUserData,
 } from '../../helpers';
 import { UserContext } from '../../context/User';
@@ -42,8 +39,6 @@ import NotificationSettings from './personal/cards/NotificationSettings';
 import CheckinCalendar from './personal/cards/CheckinCalendar';
 import EmailBindModal from './personal/modals/EmailBindModal';
 import WeChatBindModal from './personal/modals/WeChatBindModal';
-import AccountDeleteModal from './personal/modals/AccountDeleteModal';
-import ChangePasswordModal from './personal/modals/ChangePasswordModal';
 
 const PersonalSetting = () => {
   const [userState, userDispatch] = useContext(UserContext);
@@ -54,27 +49,16 @@ const PersonalSetting = () => {
     wechat_verification_code: '',
     email_verification_code: '',
     email: '',
-    self_account_deletion_confirmation: '',
-    original_password: '',
-    set_new_password: '',
-    set_new_password_confirmation: '',
   });
   const [status, setStatus] = useState({});
-  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [showWeChatBindModal, setShowWeChatBindModal] = useState(false);
   const [showEmailBindModal, setShowEmailBindModal] = useState(false);
-  const [showAccountDeleteModal, setShowAccountDeleteModal] = useState(false);
   const [turnstileEnabled, setTurnstileEnabled] = useState(false);
   const [turnstileSiteKey, setTurnstileSiteKey] = useState('');
   const [turnstileToken, setTurnstileToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [disableButton, setDisableButton] = useState(false);
   const [countdown, setCountdown] = useState(30);
-  const [systemToken, setSystemToken] = useState('');
-  const [passkeyStatus, setPasskeyStatus] = useState({ enabled: false });
-  const [passkeyRegisterLoading, setPasskeyRegisterLoading] = useState(false);
-  const [passkeyDeleteLoading, setPasskeyDeleteLoading] = useState(false);
-  const [passkeySupported, setPasskeySupported] = useState(false);
   const [notificationSettings, setNotificationSettings] = useState({
     warningType: 'email',
     warningThreshold: 100000,
@@ -124,10 +108,6 @@ const PersonalSetting = () => {
     })();
 
     getUserData();
-
-    isPasskeySupported()
-      .then(setPasskeySupported)
-      .catch(() => setPasskeySupported(false));
   }, []);
 
   useEffect(() => {
@@ -168,137 +148,9 @@ const PersonalSetting = () => {
     setInputs((inputs) => ({ ...inputs, [name]: value }));
   };
 
-  const generateAccessToken = async () => {
-    const res = await API.get('/api/user/token');
-    const { success, message, data } = res.data;
-    if (success) {
-      setSystemToken(data);
-      await copy(data);
-      showSuccess(t('令牌已重置并已复制到剪贴板'));
-    } else {
-      showError(message);
-    }
-  };
-
-  const loadPasskeyStatus = async () => {
-    try {
-      const res = await API.get('/api/user/passkey');
-      const { success, data, message } = res.data;
-      if (success) {
-        setPasskeyStatus({
-          enabled: data?.enabled || false,
-          last_used_at: data?.last_used_at || null,
-          backup_eligible: data?.backup_eligible || false,
-          backup_state: data?.backup_state || false,
-        });
-      } else {
-        showError(message);
-      }
-    } catch (error) {
-      // 忽略错误，保留默认状态
-    }
-  };
-
-  const handleRegisterPasskey = async () => {
-    if (!passkeySupported || !window.PublicKeyCredential) {
-      showInfo(t('当前设备不支持 Passkey'));
-      return;
-    }
-    setPasskeyRegisterLoading(true);
-    try {
-      const beginRes = await API.post('/api/user/passkey/register/begin');
-      const { success, message, data } = beginRes.data;
-      if (!success) {
-        showError(message || t('无法发起 Passkey 注册'));
-        return;
-      }
-
-      const publicKey = prepareCredentialCreationOptions(
-        data?.options || data?.publicKey || data,
-      );
-      const credential = await navigator.credentials.create({ publicKey });
-      const payload = buildRegistrationResult(credential);
-      if (!payload) {
-        showError(t('Passkey 注册失败，请重试'));
-        return;
-      }
-
-      const finishRes = await API.post(
-        '/api/user/passkey/register/finish',
-        payload,
-      );
-      if (finishRes.data.success) {
-        showSuccess(t('Passkey 注册成功'));
-        await loadPasskeyStatus();
-      } else {
-        showError(finishRes.data.message || t('Passkey 注册失败，请重试'));
-      }
-    } catch (error) {
-      if (error?.name === 'AbortError') {
-        showInfo(t('已取消 Passkey 注册'));
-      } else {
-        showError(t('Passkey 注册失败，请重试'));
-      }
-    } finally {
-      setPasskeyRegisterLoading(false);
-    }
-  };
-
-  const handleRemovePasskey = async () => {
-    setPasskeyDeleteLoading(true);
-    try {
-      const res = await API.delete('/api/user/passkey');
-      const { success, message } = res.data;
-      if (success) {
-        showSuccess(t('Passkey 已解绑'));
-        await loadPasskeyStatus();
-      } else {
-        showError(message || t('操作失败，请重试'));
-      }
-    } catch (error) {
-      showError(t('操作失败，请重试'));
-    } finally {
-      setPasskeyDeleteLoading(false);
-    }
-  };
-
-  const getUserData = async () => {
-    let res = await API.get(`/api/user/self`);
-    const { success, message, data } = res.data;
-    if (success) {
-      userDispatch({ type: 'login', payload: data });
-      setUserData(data);
-      await loadPasskeyStatus();
-    } else {
-      showError(message);
-    }
-  };
-
-  const handleSystemTokenClick = async (e) => {
-    e.target.select();
-    await copy(e.target.value);
-    showSuccess(t('系统令牌已复制到剪切板'));
-  };
-
-  const deleteAccount = async () => {
-    if (inputs.self_account_deletion_confirmation !== userState.user.username) {
-      showError(t('请输入你的账户名以确认删除！'));
-      return;
-    }
-
-    const res = await API.delete('/api/user/self');
-    const { success, message } = res.data;
-
-    if (success) {
-      showSuccess(t('账户已删除！'));
-      await API.get('/api/user/logout');
-      userDispatch({ type: 'logout' });
-      localStorage.removeItem('user');
-      navigate('/login');
-    } else {
-      showError(message);
-    }
-  };
+  const generateAccessToken = async () => {};
+  const loadPasskeyStatus = async () => {};
+  const handleSystemTokenClick = async (e) => {};
 
   const bindWeChat = async () => {
     if (inputs.wechat_verification_code === '') return;
@@ -313,36 +165,15 @@ const PersonalSetting = () => {
       showError(message);
     }
   };
-
-  const changePassword = async () => {
-    // if (inputs.original_password === '') {
-    //   showError(t('请输入原密码！'));
-    //   return;
-    // }
-    if (inputs.set_new_password === '') {
-      showError(t('请输入新密码！'));
-      return;
-    }
-    if (inputs.original_password === inputs.set_new_password) {
-      showError(t('新密码需要和原密码不一致！'));
-      return;
-    }
-    if (inputs.set_new_password !== inputs.set_new_password_confirmation) {
-      showError(t('两次输入的密码不一致！'));
-      return;
-    }
-    const res = await API.put(`/api/user/self`, {
-      original_password: inputs.original_password,
-      password: inputs.set_new_password,
-    });
-    const { success, message } = res.data;
+  const getUserData = async () => {
+    let res = await API.get(`/api/user/self`);
+    const { success, message, data } = res.data;
     if (success) {
-      showSuccess(t('密码修改成功！'));
-      setShowWeChatBindModal(false);
+      userDispatch({ type: 'login', payload: data });
+      setUserData(data);
     } else {
       showError(message);
     }
-    setShowChangePasswordModal(false);
   };
 
   const sendVerificationCode = async () => {
@@ -467,19 +298,8 @@ const PersonalSetting = () => {
               t={t}
               userState={userState}
               status={status}
-              systemToken={systemToken}
               setShowEmailBindModal={setShowEmailBindModal}
               setShowWeChatBindModal={setShowWeChatBindModal}
-              generateAccessToken={generateAccessToken}
-              handleSystemTokenClick={handleSystemTokenClick}
-              setShowChangePasswordModal={setShowChangePasswordModal}
-              setShowAccountDeleteModal={setShowAccountDeleteModal}
-              passkeyStatus={passkeyStatus}
-              passkeySupported={passkeySupported}
-              passkeyRegisterLoading={passkeyRegisterLoading}
-              passkeyDeleteLoading={passkeyDeleteLoading}
-              onPasskeyRegister={handleRegisterPasskey}
-              onPasskeyDelete={handleRemovePasskey}
             />
 
             {/* 右侧：其他设置 */}
@@ -494,6 +314,7 @@ const PersonalSetting = () => {
       </div>
 
       {/* 模态框组件 */}
+
       <EmailBindModal
         t={t}
         showEmailBindModal={showEmailBindModal}
@@ -518,31 +339,6 @@ const PersonalSetting = () => {
         handleInputChange={handleInputChange}
         bindWeChat={bindWeChat}
         status={status}
-      />
-
-      <AccountDeleteModal
-        t={t}
-        showAccountDeleteModal={showAccountDeleteModal}
-        setShowAccountDeleteModal={setShowAccountDeleteModal}
-        inputs={inputs}
-        handleInputChange={handleInputChange}
-        deleteAccount={deleteAccount}
-        userState={userState}
-        turnstileEnabled={turnstileEnabled}
-        turnstileSiteKey={turnstileSiteKey}
-        setTurnstileToken={setTurnstileToken}
-      />
-
-      <ChangePasswordModal
-        t={t}
-        showChangePasswordModal={showChangePasswordModal}
-        setShowChangePasswordModal={setShowChangePasswordModal}
-        inputs={inputs}
-        handleInputChange={handleInputChange}
-        changePassword={changePassword}
-        turnstileEnabled={turnstileEnabled}
-        turnstileSiteKey={turnstileSiteKey}
-        setTurnstileToken={setTurnstileToken}
       />
     </div>
   );

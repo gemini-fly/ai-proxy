@@ -22,7 +22,6 @@ import {
   Card,
   Divider,
   Form,
-  Input,
   Typography,
 } from '@douyinfe/semi-ui';
 import React, { useState } from 'react';
@@ -34,33 +33,14 @@ const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
   const [useBackupCode, setUseBackupCode] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
 
-  const handleSubmit = async () => {
-    if (!verificationCode) {
-      showError('请输入验证码');
-      return;
-    }
-    // Validate code format
-    if (useBackupCode && verificationCode.length !== 8) {
-      showError('备用码必须是8位');
-      return;
-    } else if (!useBackupCode && !/^\d{6}$/.test(verificationCode)) {
-      showError('验证码必须是6位数字');
-      return;
-    }
-
+  const handleSubmitWithCode = async (code) => {
     setLoading(true);
     try {
-      const res = await API.post('/api/user/login/2fa', {
-        code: verificationCode,
-      });
-
+      const res = await API.post('/api/user/login/2fa', { code });
       if (res.data.success) {
         showSuccess('登录成功');
-        // 保存用户信息到本地存储
         localStorage.setItem('user', JSON.stringify(res.data.data));
-        if (onSuccess) {
-          onSuccess(res.data.data);
-        }
+        if (onSuccess) onSuccess(res.data.data);
       } else {
         showError(res.data.message);
       }
@@ -71,11 +51,76 @@ const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
     }
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      handleSubmit();
+  const handleSubmit = async () => {
+    if (!verificationCode) {
+      showError('请输入验证码');
+      return;
+    }
+    if (useBackupCode && verificationCode.length !== 8) {
+      showError('备用码必须是8位');
+      return;
+    } else if (!useBackupCode && !/^\d{6}$/.test(verificationCode)) {
+      showError('验证码必须是6位数字');
+      return;
+    }
+    await handleSubmitWithCode(verificationCode);
+  };
+
+  const handleCodeChange = (value) => {
+    setVerificationCode(value);
+    // 非备用码模式下，输入满6位自动提交
+    if (!useBackupCode && /^\d{6}$/.test(value)) {
+      handleSubmitWithCode(value);
     }
   };
+
+  const codeInputProps = {
+    field: 'code',
+    label: useBackupCode ? '备用码' : '验证码',
+    placeholder: useBackupCode ? '请输入8位备用码' : '请输入6位验证码',
+    value: verificationCode,
+    onChange: handleCodeChange,
+    onKeyPress: (e) => e.key === 'Enter' && handleSubmit(),
+    size: 'large',
+    style: { marginBottom: 16 },
+    autoFocus: true,
+  };
+
+  const switchButton = (
+    <Button
+      theme='borderless'
+      type='tertiary'
+      onClick={() => {
+        setUseBackupCode(!useBackupCode);
+        setVerificationCode('');
+      }}
+      style={{ marginRight: 16, color: '#1890ff', padding: 0 }}
+    >
+      {useBackupCode ? '使用认证器验证码' : '使用备用码'}
+    </Button>
+  );
+
+  const backButton = onBack && (
+    <Button
+      theme='borderless'
+      type='tertiary'
+      onClick={onBack}
+      style={{ color: '#1890ff', padding: 0 }}
+    >
+      返回登录
+    </Button>
+  );
+
+  const tips = (
+    <Text size='small' type='secondary'>
+      <strong>提示：</strong>
+      <br />
+      • 验证码每30秒更新一次
+      <br />
+      • 如果无法获取验证码，请使用备用码
+      <br />• 每个备用码只能使用一次
+    </Text>
+  );
 
   if (isModal) {
     return (
@@ -85,17 +130,7 @@ const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
         </Paragraph>
 
         <Form onSubmit={handleSubmit}>
-          <Form.Input
-            field='code'
-            label={useBackupCode ? '备用码' : '验证码'}
-            placeholder={useBackupCode ? '请输入8位备用码' : '请输入6位验证码'}
-            value={verificationCode}
-            onChange={setVerificationCode}
-            onKeyPress={handleKeyPress}
-            size='large'
-            style={{ marginBottom: 16 }}
-            autoFocus
-          />
+          <Form.Input {...codeInputProps} />
 
           <Button
             htmlType='submit'
@@ -112,39 +147,12 @@ const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
         <Divider />
 
         <div style={{ textAlign: 'center' }}>
-          <Button
-            theme='borderless'
-            type='tertiary'
-            onClick={() => {
-              setUseBackupCode(!useBackupCode);
-              setVerificationCode('');
-            }}
-            style={{ marginRight: 16, color: '#1890ff', padding: 0 }}
-          >
-            {useBackupCode ? '使用认证器验证码' : '使用备用码'}
-          </Button>
-
-          {onBack && (
-            <Button
-              theme='borderless'
-              type='tertiary'
-              onClick={onBack}
-              style={{ color: '#1890ff', padding: 0 }}
-            >
-              返回登录
-            </Button>
-          )}
+          {switchButton}
+          {backButton}
         </div>
 
         <div className='bg-gray-50 dark:bg-gray-800 rounded-lg p-3'>
-          <Text size='small' type='secondary'>
-            <strong>提示：</strong>
-            <br />
-            • 验证码每30秒更新一次
-            <br />
-            • 如果无法获取验证码，请使用备用码
-            <br />• 每个备用码只能使用一次
-          </Text>
+          {tips}
         </div>
       </div>
     );
@@ -168,17 +176,7 @@ const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
         </div>
 
         <Form onSubmit={handleSubmit}>
-          <Form.Input
-            field='code'
-            label={useBackupCode ? '备用码' : '验证码'}
-            placeholder={useBackupCode ? '请输入8位备用码' : '请输入6位验证码'}
-            value={verificationCode}
-            onChange={setVerificationCode}
-            onKeyPress={handleKeyPress}
-            size='large'
-            style={{ marginBottom: 16 }}
-            autoFocus
-          />
+          <Form.Input {...codeInputProps} />
 
           <Button
             htmlType='submit'
@@ -195,28 +193,8 @@ const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
         <Divider />
 
         <div style={{ textAlign: 'center' }}>
-          <Button
-            theme='borderless'
-            type='tertiary'
-            onClick={() => {
-              setUseBackupCode(!useBackupCode);
-              setVerificationCode('');
-            }}
-            style={{ marginRight: 16, color: '#1890ff', padding: 0 }}
-          >
-            {useBackupCode ? '使用认证器验证码' : '使用备用码'}
-          </Button>
-
-          {onBack && (
-            <Button
-              theme='borderless'
-              type='tertiary'
-              onClick={onBack}
-              style={{ color: '#1890ff', padding: 0 }}
-            >
-              返回登录
-            </Button>
-          )}
+          {switchButton}
+          {backButton}
         </div>
 
         <div
@@ -227,14 +205,7 @@ const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
             borderRadius: 6,
           }}
         >
-          <Text size='small' type='secondary'>
-            <strong>提示：</strong>
-            <br />
-            • 验证码每30秒更新一次
-            <br />
-            • 如果无法获取验证码，请使用备用码
-            <br />• 每个备用码只能使用一次
-          </Text>
+          {tips}
         </div>
       </Card>
     </div>

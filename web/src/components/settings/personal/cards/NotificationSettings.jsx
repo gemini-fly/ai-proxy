@@ -163,7 +163,7 @@ const NotificationSettings = ({
         midjourney: true,
         task: true,
       },
-      personal: { enabled: true, topup: true, personal: true },
+      personal: { enabled: true, topup: true, personal: true, security: true },
       admin: {
         enabled: true,
         channel: true,

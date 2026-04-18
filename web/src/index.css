@@ -834,3 +834,26 @@ html.dark .with-pastel-balls::before {
 .semi-datepicker-range-input {
   border-radius: 10px !important;
 }
+
+/* ==================== 懂点Code 首页动画 ==================== */
+@keyframes ddcode-cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+@keyframes ddcode-marquee-left {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes ddcode-marquee-right {
+  0% { transform: translateX(-50%); }
+  100% { transform: translateX(0); }
+}
+@keyframes ddcode-fade-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.ddcode-cursor { animation: ddcode-cursor-blink 1s step-end infinite; }
+.ddcode-marquee-left  { animation: ddcode-marquee-left  28s linear infinite; }
+.ddcode-marquee-right { animation: ddcode-marquee-right 28s linear infinite; }
+.ddcode-feature-card  { transition: border-color 0.25s, transform 0.25s; }
+.ddcode-feature-card:hover { transform: translateY(-3px); }

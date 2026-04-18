@@ -43,6 +43,8 @@ export const DEFAULT_ADMIN_CONFIG = {
     enabled: true,
     topup: true,
     personal: true,
+    security: true,
+    contract: true,
   },
   admin: {
     enabled: true,

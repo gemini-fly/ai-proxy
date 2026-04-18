@@ -97,6 +97,10 @@ func SetApiRouter(router *gin.Engine) {
 				// Check-in routes
 				selfRoute.GET("/checkin", controller.GetCheckinStatus)
 				selfRoute.POST("/checkin", middleware.TurnstileCheck(), controller.DoCheckin)
+
+				// Contract routes (user)
+				selfRoute.GET("/contract", controller.GetUserContracts)
+				selfRoute.POST("/contract/:id/sign", controller.SignContract)
 			}
 
 			adminRoute := userRoute.Group("/")
@@ -295,6 +299,15 @@ func SetApiRouter(router *gin.Engine) {
 			deploymentsRoute.PUT("/:id/name", controller.UpdateDeploymentName)
 			deploymentsRoute.POST("/:id/extend", controller.ExtendDeployment)
 			deploymentsRoute.DELETE("/:id", controller.DeleteDeployment)
+		}
+		// Contract routes
+		contractRoute := apiRouter.Group("/contract")
+		contractRoute.Use(middleware.AdminAuth())
+		{
+			contractRoute.GET("/", controller.GetAllContracts)
+			contractRoute.POST("/", controller.CreateContract)
+			contractRoute.PUT("/:id", controller.UpdateContract)
+			contractRoute.DELETE("/:id", controller.DeleteContract)
 		}
 	}
 }

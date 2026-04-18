@@ -57,6 +57,8 @@ export default function SettingsSidebarModulesAdmin(props) {
       enabled: true,
       topup: true,
       personal: true,
+      security: true,
+      contract: true,
     },
     admin: {
       enabled: true,
@@ -117,6 +119,8 @@ export default function SettingsSidebarModulesAdmin(props) {
         enabled: true,
         topup: true,
         personal: true,
+        security: true,
+        contract: true,
       },
       admin: {
         enabled: true,
@@ -185,7 +189,7 @@ export default function SettingsSidebarModulesAdmin(props) {
             midjourney: true,
             task: true,
           },
-          personal: { enabled: true, topup: true, personal: true },
+          personal: { enabled: true, topup: true, personal: true, security: true, contract: true },
           admin: {
             enabled: true,
             channel: true,
@@ -242,6 +246,16 @@ export default function SettingsSidebarModulesAdmin(props) {
           key: 'personal',
           title: t('个人设置'),
           description: t('个人信息设置'),
+        },
+        {
+          key: 'security',
+          title: t('安全设置'),
+          description: t('密码、2FA、Passkey 等安全功能'),
+        },
+        {
+          key: 'contract',
+          title: t('我的合同'),
+          description: t('查看已签署及待签署合同'),
         },
       ],
     },

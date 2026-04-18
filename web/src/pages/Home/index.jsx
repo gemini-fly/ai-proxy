@@ -1,30 +1,5 @@
-/*
-Copyright (C) 2025 QuantumNous
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU Affero General Public License for more details.
-
-You should have received a copy of the GNU Affero General Public License
-along with this program. If not, see <https://www.gnu.org/licenses/>.
-
-For commercial licensing, please contact support@quantumnous.com
-*/
-
 import React, { useContext, useEffect, useState } from 'react';
-import {
-  Button,
-  Typography,
-  Input,
-  ScrollList,
-  ScrollItem,
-} from '@douyinfe/semi-ui';
+import { Button, Input, ScrollList, ScrollItem } from '@douyinfe/semi-ui';
 import { API, showError, copy, showSuccess } from '../../helpers';
 import { useIsMobile } from '../../hooks/common/useIsMobile';
 import { API_ENDPOINTS } from '../../constants/common.constant';
@@ -32,68 +7,113 @@ import { StatusContext } from '../../context/Status';
 import { useActualTheme } from '../../context/Theme';
 import { marked } from 'marked';
 import { useTranslation } from 'react-i18next';
-import {
-  IconGithubLogo,
-  IconPlay,
-  IconFile,
-  IconCopy,
-} from '@douyinfe/semi-icons';
+import { IconCopy } from '@douyinfe/semi-icons';
 import { Link } from 'react-router-dom';
 import NoticeModal from '../../components/layout/NoticeModal';
 import {
-  Moonshot,
-  OpenAI,
-  XAI,
-  Zhipu,
-  Volcengine,
-  Cohere,
-  Claude,
-  Gemini,
-  Suno,
-  Minimax,
-  Wenxin,
-  Spark,
-  Qingyan,
-  DeepSeek,
-  Qwen,
-  Midjourney,
-  Grok,
-  AzureAI,
-  Hunyuan,
-  Xinference,
+  Moonshot, OpenAI, XAI, Zhipu, Volcengine, Cohere, Claude, Gemini,
+  Suno, Minimax, Wenxin, Spark, Qingyan, DeepSeek, Qwen, Midjourney,
+  Grok, AzureAI, Hunyuan, Xinference,
 } from '@lobehub/icons';
 
-const { Text } = Typography;
+/* ── Design tokens ─────────────────────────────────────────── */
+const C = {
+  bg:         '#06080f',
+  surface:    '#0d1117',
+  border:     'rgba(255,255,255,0.07)',
+  primary:    '#06d6a0',
+  primaryDim: 'rgba(6,214,160,0.10)',
+  accent:     '#ffd166',
+  text0:      '#f0f6fc',
+  text1:      '#8b949e',
+  text2:      '#3d444d',
+};
 
+/* ── Static data ───────────────────────────────────────────── */
+const FEATURES = [
+  { icon: '🌐', color: '#06d6a0', title: '国内外全覆盖',
+    desc: '30+ 主流大模型一站接入，OpenAI、Claude、Gemini 到文心、星火、通义千问，统统搞定。' },
+  { icon: '⚡', color: '#ffd166', title: '统一 OpenAI 接口',
+    desc: '无需改代码，更换 Base URL 即可切换任意模型，完全兼容 OpenAI SDK 及所有工具链。' },
+  { icon: '👥', color: '#a78bfa', title: '企业团队管理',
+    desc: '按员工分配独立 API Key，设置用量限额，实时查看每个成员的消费与调用明细。' },
+  { icon: '💰', color: '#fb923c', title: '透明按量计费',
+    desc: '无月费无套餐，实时额度统计，充值即用。个人开发者与企业团队均可灵活使用。' },
+];
+
+const INTL = [
+  { icon: <OpenAI size={26} />,          name: 'OpenAI' },
+  { icon: <Claude.Color size={26} />,    name: 'Claude' },
+  { icon: <Gemini.Color size={26} />,    name: 'Gemini' },
+  { icon: <Grok size={26} />,            name: 'Grok' },
+  { icon: <AzureAI.Color size={26} />,   name: 'Azure AI' },
+  { icon: <DeepSeek.Color size={26} />,  name: 'DeepSeek' },
+  { icon: <Cohere.Color size={26} />,    name: 'Cohere' },
+  { icon: <Midjourney size={26} />,      name: 'Midjourney' },
+  { icon: <Suno size={26} />,            name: 'Suno' },
+  { icon: <XAI size={26} />,             name: 'xAI' },
+];
+
+const CN = [
+  { icon: <Qwen.Color size={26} />,       name: '通义千问' },
+  { icon: <Wenxin.Color size={26} />,     name: '文心一言' },
+  { icon: <Spark.Color size={26} />,      name: '讯飞星火' },
+  { icon: <Zhipu.Color size={26} />,      name: '智谱 GLM' },
+  { icon: <Hunyuan.Color size={26} />,    name: '腾讯混元' },
+  { icon: <Volcengine.Color size={26} />, name: '字节豆包' },
+  { icon: <Minimax.Color size={26} />,    name: 'MiniMax' },
+  { icon: <Moonshot size={26} />,         name: 'Moonshot' },
+  { icon: <Qingyan.Color size={26} />,    name: '清言' },
+  { icon: <Xinference.Color size={26} />, name: 'Xinference' },
+];
+
+const TERMINAL = [
+  { p: '$', t: 'curl https://api.ddcode.ai/v1/chat/completions \\',  c: '#8b949e' },
+  { p: ' ', t: '  -H "Authorization: Bearer sk-dd••••••••ua" \\',   c: '#79c0ff' },
+  { p: ' ', t: "  -d '{\"model\":\"gpt-4o\",\"messages\":[...]}'",   c: '#8b949e' },
+  { p: '>', t: 'HTTP/2 200  ✓',                                      c: '#06d6a0' },
+  { p: ' ', t: '"content": "当然，让我来帮你解答..."',               c: '#ffd166' },
+  { p: '>', t: 'tokens: 1,243  cost: $0.0037  latency: 1.2s',        c: '#3d444d' },
+];
+
+/* ── Sub-components ─────────────────────────────────────────── */
+const ModelChip = ({ icon, name }) => (
+  <div style={{
+    display: 'flex', alignItems: 'center', gap: 8,
+    padding: '7px 16px',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.07)',
+    borderRadius: 40, whiteSpace: 'nowrap', marginRight: 12,
+  }}>
+    {icon}
+    <span style={{ fontSize: 13, color: '#8b949e', fontWeight: 500 }}>{name}</span>
+  </div>
+);
+
+/* ── Main component ─────────────────────────────────────────── */
 const Home = () => {
   const { t, i18n } = useTranslation();
   const [statusState] = useContext(StatusContext);
   const actualTheme = useActualTheme();
   const [homePageContentLoaded, setHomePageContentLoaded] = useState(false);
-  const [homePageContent, setHomePageContent] = useState('');
-  const [noticeVisible, setNoticeVisible] = useState(false);
-  const isMobile = useIsMobile();
-  const isDemoSiteMode = statusState?.status?.demo_site_enabled || false;
-  const docsLink = statusState?.status?.docs_link || '';
-  const serverAddress =
-    statusState?.status?.server_address || `${window.location.origin}`;
+  const [homePageContent, setHomePageContent]             = useState('');
+  const [noticeVisible, setNoticeVisible]                 = useState(false);
+  const isMobile      = useIsMobile();
+  const serverAddress = statusState?.status?.server_address || window.location.origin;
   const endpointItems = API_ENDPOINTS.map((e) => ({ value: e }));
   const [endpointIndex, setEndpointIndex] = useState(0);
-  const isChinese = i18n.language.startsWith('zh');
+  const [termIdx, setTermIdx]             = useState(0);
 
+  /* load custom home page content */
   const displayHomePageContent = async () => {
     setHomePageContent(localStorage.getItem('home_page_content') || '');
     const res = await API.get('/api/home_page_content');
     const { success, message, data } = res.data;
     if (success) {
       let content = data;
-      if (!data.startsWith('https://')) {
-        content = marked.parse(data);
-      }
+      if (!data.startsWith('https://')) content = marked.parse(data);
       setHomePageContent(content);
       localStorage.setItem('home_page_content', content);
-
-      // 如果内容是 URL，则发送主题模式
       if (data.startsWith('https://')) {
         const iframe = document.querySelector('iframe');
         if (iframe) {
@@ -110,242 +130,325 @@ const Home = () => {
     setHomePageContentLoaded(true);
   };
 
-  const handleCopyBaseURL = async () => {
-    const ok = await copy(serverAddress);
-    if (ok) {
-      showSuccess(t('已复制到剪切板'));
-    }
+  const handleCopy = async () => {
+    if (await copy(serverAddress)) showSuccess(t('已复制到剪切板'));
   };
 
   useEffect(() => {
-    const checkNoticeAndShow = async () => {
+    (async () => {
       const lastCloseDate = localStorage.getItem('notice_close_date');
-      const today = new Date().toDateString();
-      if (lastCloseDate !== today) {
+      if (lastCloseDate !== new Date().toDateString()) {
         try {
           const res = await API.get('/api/notice');
           const { success, data } = res.data;
-          if (success && data && data.trim() !== '') {
-            setNoticeVisible(true);
-          }
-        } catch (error) {
-          console.error('获取公告失败:', error);
-        }
+          if (success && data?.trim()) setNoticeVisible(true);
+        } catch (_) {}
       }
-    };
-
-    checkNoticeAndShow();
+    })();
   }, []);
 
-  useEffect(() => {
-    displayHomePageContent().then();
-  }, []);
+  useEffect(() => { displayHomePageContent(); }, []);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setEndpointIndex((prev) => (prev + 1) % endpointItems.length);
-    }, 3000);
-    return () => clearInterval(timer);
+    const t = setInterval(() => setEndpointIndex((p) => (p + 1) % endpointItems.length), 3000);
+    return () => clearInterval(t);
   }, [endpointItems.length]);
 
+  /* animate terminal lines */
+  useEffect(() => {
+    if (!homePageContentLoaded || homePageContent !== '') return;
+    const t = setInterval(() => setTermIdx((p) => (p + 1) % (TERMINAL.length + 4)), 700);
+    return () => clearInterval(t);
+  }, [homePageContentLoaded, homePageContent]);
+
+  /* ── render ───────────────────────────────────────────────── */
   return (
-    <div className='w-full overflow-x-hidden'>
-      <NoticeModal
-        visible={noticeVisible}
-        onClose={() => setNoticeVisible(false)}
-        isMobile={isMobile}
-      />
+    <div style={{ background: C.bg, minHeight: '100vh', color: C.text0 }}>
+      <NoticeModal visible={noticeVisible} onClose={() => setNoticeVisible(false)} isMobile={isMobile} />
+
       {homePageContentLoaded && homePageContent === '' ? (
-        <div className='w-full overflow-x-hidden'>
-          {/* Banner 部分 */}
-          <div className='w-full border-b border-semi-color-border min-h-[500px] md:min-h-[600px] lg:min-h-[700px] relative overflow-x-hidden'>
-            {/* 背景模糊晕染球 */}
-            <div className='blur-ball blur-ball-indigo' />
-            <div className='blur-ball blur-ball-teal' />
-            <div className='flex items-center justify-center h-full px-4 py-20 md:py-24 lg:py-32 mt-10'>
-              {/* 居中内容区 */}
-              <div className='flex flex-col items-center justify-center text-center max-w-4xl mx-auto'>
-                <div className='flex flex-col items-center justify-center mb-6 md:mb-8'>
-                  <h1
-                    className={`text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-semi-color-text-0 leading-tight ${isChinese ? 'tracking-wide md:tracking-wider' : ''}`}
-                  >
-                    <>
-                      {t('统一的')}
-                      <br />
-                      <span className='shine-text'>{t('大模型接口网关')}</span>
-                    </>
-                  </h1>
-                  <p className='text-base md:text-lg lg:text-xl text-semi-color-text-1 mt-4 md:mt-6 max-w-xl'>
-                    {t('更好的价格，更好的稳定性，只需要将模型基址替换为：')}
-                  </p>
-                  {/* BASE URL 与端点选择 */}
-                  <div className='flex flex-col md:flex-row items-center justify-center gap-4 w-full mt-4 md:mt-6 max-w-md'>
-                    <Input
-                      readonly
-                      value={serverAddress}
-                      className='flex-1 !rounded-full'
-                      size={isMobile ? 'default' : 'large'}
-                      suffix={
-                        <div className='flex items-center gap-2'>
-                          <ScrollList
-                            bodyHeight={32}
-                            style={{ border: 'unset', boxShadow: 'unset' }}
-                          >
-                            <ScrollItem
-                              mode='wheel'
-                              cycled={true}
-                              list={endpointItems}
-                              selectedIndex={endpointIndex}
-                              onSelect={({ index }) => setEndpointIndex(index)}
-                            />
-                          </ScrollList>
-                          <Button
-                            type='primary'
-                            onClick={handleCopyBaseURL}
-                            icon={<IconCopy />}
-                            className='!rounded-full'
-                          />
-                        </div>
-                      }
-                    />
-                  </div>
+        <>
+          {/* ═══════════════ HERO ═══════════════ */}
+          <section style={{ minHeight: '100vh', display: 'flex', alignItems: 'center',
+            position: 'relative', overflow: 'hidden', paddingTop: 60 }}>
+
+            {/* grid bg */}
+            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
+              backgroundImage: `linear-gradient(rgba(255,255,255,0.025) 1px,transparent 1px),
+                                linear-gradient(90deg,rgba(255,255,255,0.025) 1px,transparent 1px)`,
+              backgroundSize: '52px 52px' }} />
+
+            {/* glow blobs */}
+            <div style={{ position: 'absolute', top: '15%', left: '5%', width: 480, height: 480,
+              borderRadius: '50%', pointerEvents: 'none',
+              background: 'radial-gradient(circle,rgba(6,214,160,0.13) 0%,transparent 70%)',
+              filter: 'blur(48px)' }} />
+            <div style={{ position: 'absolute', bottom: '5%', right: '2%', width: 520, height: 520,
+              borderRadius: '50%', pointerEvents: 'none',
+              background: 'radial-gradient(circle,rgba(255,209,102,0.08) 0%,transparent 70%)',
+              filter: 'blur(60px)' }} />
+
+            <div style={{
+              maxWidth: 1200, margin: '0 auto', width: '100%',
+              padding: isMobile ? '48px 20px' : '80px 48px',
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+              gap: isMobile ? 48 : 72, alignItems: 'center',
+              position: 'relative',
+            }}>
+
+              {/* ─── Left copy ─────────────────── */}
+              <div>
+                {/* badge */}
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  padding: '5px 14px', borderRadius: 40, marginBottom: 28,
+                  border: `1px solid ${C.primaryDim}`, background: C.primaryDim,
+                }}>
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: C.primary }} />
+                  <span style={{ fontSize: 13, color: C.primary, fontWeight: 600 }}>
+                    30+ AI 模型 · 随时可用
+                  </span>
                 </div>
 
-                {/* 操作按钮 */}
-                <div className='flex flex-row gap-4 justify-center items-center'>
-                  <Link to='/console'>
-                    <Button
-                      theme='solid'
-                      type='primary'
-                      size={isMobile ? 'default' : 'large'}
-                      className='!rounded-3xl px-8 py-2'
-                      icon={<IconPlay />}
-                    >
-                      {t('获取密钥')}
-                    </Button>
+                {/* headline */}
+                <h1 style={{ fontSize: isMobile ? 48 : 68, fontWeight: 800,
+                  lineHeight: 1.08, marginBottom: 20, letterSpacing: '-0.025em' }}>
+                  <span style={{ fontFamily: 'ui-monospace,monospace', color: C.primary }}>懂点</span>
+                  <span style={{ fontFamily: 'ui-monospace,monospace' }}>Code</span>
+                  <br />
+                  <span style={{ fontSize: isMobile ? 22 : 32, fontWeight: 400, color: C.text1, letterSpacing: 0 }}>
+                    AI API 代理平台
+                  </span>
+                </h1>
+
+                <p style={{ fontSize: isMobile ? 15 : 17, color: C.text1, lineHeight: 1.75,
+                  marginBottom: 36, maxWidth: 460 }}>
+                  一个 Key 接入国内外 30+ 主流大模型。无缝兼容 OpenAI SDK，
+                  企业可按员工分配用量，实时监控消费，开箱即用。
+                </p>
+
+                {/* URL input */}
+                <div style={{ marginBottom: 28 }}>
+                  <div style={{ fontSize: 11, color: C.text2, marginBottom: 8,
+                    textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600 }}>
+                    接口地址
+                  </div>
+                  <Input
+                    readonly
+                    value={serverAddress}
+                    style={{ background: C.surface, borderColor: C.border,
+                      borderRadius: 12, fontFamily: 'ui-monospace,monospace', fontSize: 13 }}
+                    size='large'
+                    suffix={
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <ScrollList bodyHeight={28} style={{ border: 'none', boxShadow: 'none' }}>
+                          <ScrollItem mode='wheel' cycled list={endpointItems}
+                            selectedIndex={endpointIndex}
+                            onSelect={({ index }) => setEndpointIndex(index)} />
+                        </ScrollList>
+                        <Button size='small' onClick={handleCopy} icon={<IconCopy />}
+                          style={{ borderRadius: 8, background: C.primary,
+                            border: 'none', color: '#060810', fontWeight: 700 }} />
+                      </div>
+                    }
+                  />
+                </div>
+
+                {/* CTAs */}
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                  <Link to='/register'>
+                    <button style={{
+                      padding: isMobile ? '11px 24px' : '13px 32px',
+                      background: C.primary, color: '#060810',
+                      border: 'none', borderRadius: 10,
+                      fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                      letterSpacing: '-0.01em',
+                    }}>
+                      免费注册 →
+                    </button>
                   </Link>
-                  {isDemoSiteMode && statusState?.status?.version ? (
-                    <Button
-                      size={isMobile ? 'default' : 'large'}
-                      className='flex items-center !rounded-3xl px-6 py-2'
-                      icon={<IconGithubLogo />}
-                      onClick={() =>
-                        window.open(
-                          'https://github.com/QuantumNous/new-api',
-                          '_blank',
-                        )
-                      }
-                    >
-                      {statusState.status.version}
-                    </Button>
-                  ) : (
-                    docsLink && (
-                      <Button
-                        size={isMobile ? 'default' : 'large'}
-                        className='flex items-center !rounded-3xl px-6 py-2'
-                        icon={<IconFile />}
-                        onClick={() => window.open(docsLink, '_blank')}
-                      >
-                        {t('文档')}
-                      </Button>
-                    )
-                  )}
-                </div>
-
-                {/* 框架兼容性图标 */}
-                <div className='mt-12 md:mt-16 lg:mt-20 w-full'>
-                  <div className='flex items-center mb-6 md:mb-8 justify-center'>
-                    <Text
-                      type='tertiary'
-                      className='text-lg md:text-xl lg:text-2xl font-light'
-                    >
-                      {t('支持众多的大模型供应商')}
-                    </Text>
-                  </div>
-                  <div className='flex flex-wrap items-center justify-center gap-3 sm:gap-4 md:gap-6 lg:gap-8 max-w-5xl mx-auto px-4'>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Moonshot size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <OpenAI size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <XAI size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Zhipu.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Volcengine.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Cohere.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Claude.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Gemini.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Suno size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Minimax.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Wenxin.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Spark.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Qingyan.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <DeepSeek.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Qwen.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Midjourney size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Grok size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <AzureAI.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Hunyuan.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Xinference.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Typography.Text className='!text-lg sm:!text-xl md:!text-2xl lg:!text-3xl font-bold'>
-                        30+
-                      </Typography.Text>
-                    </div>
-                  </div>
+                  <Link to='/console'>
+                    <button style={{
+                      padding: isMobile ? '11px 22px' : '13px 28px',
+                      background: 'transparent', color: C.text0,
+                      border: `1px solid ${C.border}`, borderRadius: 10,
+                      fontSize: 15, fontWeight: 600, cursor: 'pointer',
+                    }}>
+                      进入控制台
+                    </button>
+                  </Link>
                 </div>
               </div>
+
+              {/* ─── Right terminal ────────────── */}
+              {!isMobile && (
+                <div style={{
+                  background: C.surface, border: `1px solid ${C.border}`,
+                  borderRadius: 16, overflow: 'hidden',
+                  boxShadow: '0 32px 96px rgba(0,0,0,0.7)',
+                }}>
+                  {/* title bar */}
+                  <div style={{ padding: '12px 18px', borderBottom: `1px solid ${C.border}`,
+                    display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {['#f85149','#ffd166','#3fb950'].map((c) => (
+                      <div key={c} style={{ width: 12, height: 12, borderRadius: '50%', background: c }} />
+                    ))}
+                    <span style={{ marginLeft: 10, fontSize: 12, color: C.text2,
+                      fontFamily: 'ui-monospace,monospace' }}>
+                      dongdiancode ~ api-gateway
+                    </span>
+                  </div>
+
+                  {/* terminal body */}
+                  <div style={{ padding: '20px 24px', fontFamily: 'ui-monospace,monospace',
+                    fontSize: 13, lineHeight: 1.9 }}>
+                    {TERMINAL.map((line, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 14,
+                        opacity: termIdx > i ? 1 : 0, transition: 'opacity 0.35s' }}>
+                        <span style={{ color: C.text2, userSelect: 'none', minWidth: 12 }}>{line.p}</span>
+                        <span style={{ color: line.c }}>{line.t}</span>
+                      </div>
+                    ))}
+                    {/* cursor */}
+                    <div style={{ display: 'flex', gap: 14, marginTop: 4 }}>
+                      <span style={{ color: C.text2 }}>$</span>
+                      <span className='ddcode-cursor' style={{
+                        display: 'inline-block', width: 8, height: 16,
+                        background: C.primary, verticalAlign: 'middle',
+                      }} />
+                    </div>
+
+                    {/* stats */}
+                    <div style={{
+                      marginTop: 20, padding: '14px 16px',
+                      background: 'rgba(6,214,160,0.07)', borderRadius: 10,
+                      border: `1px solid rgba(6,214,160,0.15)`,
+                      display: 'flex', gap: 28,
+                      opacity: termIdx > TERMINAL.length ? 1 : 0,
+                      transition: 'opacity 0.5s',
+                    }}>
+                      {[
+                        { label: '今日调用', value: '4,721' },
+                        { label: '消耗额度', value: '$2.83' },
+                        { label: '成功率',   value: '99.8%' },
+                      ].map((s) => (
+                        <div key={s.label}>
+                          <div style={{ fontSize: 11, color: C.text2 }}>{s.label}</div>
+                          <div style={{ fontSize: 20, fontWeight: 700, color: C.primary }}>{s.value}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        </div>
+          </section>
+
+          {/* ═══════════════ FEATURES ═══════════════ */}
+          <section style={{ padding: isMobile ? '64px 20px' : '100px 48px',
+            maxWidth: 1200, margin: '0 auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: isMobile ? 40 : 64 }}>
+              <div style={{ fontSize: 12, color: C.primary, fontWeight: 700,
+                letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 14 }}>
+                为什么选择懂点Code
+              </div>
+              <h2 style={{ fontSize: isMobile ? 28 : 42, fontWeight: 800,
+                marginBottom: 14, letterSpacing: '-0.02em' }}>
+                一站式 AI 接口管理
+              </h2>
+              <p style={{ color: C.text1, fontSize: 16, maxWidth: 440, margin: '0 auto' }}>
+                从个人开发者到企业团队，满足不同规模的 AI 接入需求
+              </p>
+            </div>
+
+            <div style={{ display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : 'repeat(2,1fr)', gap: 18 }}>
+              {FEATURES.map((f) => (
+                <div key={f.title} className='ddcode-feature-card' style={{
+                  padding: '28px 30px', background: C.surface,
+                  border: `1px solid ${C.border}`, borderRadius: 16,
+                }}>
+                  <div style={{ fontSize: 34, marginBottom: 14 }}>{f.icon}</div>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 10, color: f.color }}>
+                    {f.title}
+                  </h3>
+                  <p style={{ fontSize: 14, color: C.text1, lineHeight: 1.8, margin: 0 }}>
+                    {f.desc}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* ═══════════════ MODELS MARQUEE ═══════════════ */}
+          <section style={{ overflow: 'hidden', padding: '60px 0',
+            borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}` }}>
+            <div style={{ textAlign: 'center', marginBottom: 32, padding: '0 20px' }}>
+              <span style={{ fontSize: 13, color: C.text1, fontWeight: 500 }}>
+                国内外主流大模型，全部覆盖
+              </span>
+            </div>
+
+            {/* row 1 → left */}
+            <div style={{ overflow: 'hidden', marginBottom: 14 }}>
+              <div className='ddcode-marquee-left' style={{ display: 'flex', width: 'max-content' }}>
+                {[...INTL, ...INTL].map((m, i) => <ModelChip key={i} icon={m.icon} name={m.name} />)}
+              </div>
+            </div>
+
+            {/* row 2 → right */}
+            <div style={{ overflow: 'hidden' }}>
+              <div className='ddcode-marquee-right' style={{ display: 'flex', width: 'max-content' }}>
+                {[...CN, ...CN].map((m, i) => <ModelChip key={i} icon={m.icon} name={m.name} />)}
+              </div>
+            </div>
+          </section>
+
+          {/* ═══════════════ CTA ═══════════════ */}
+          <section style={{ padding: isMobile ? '80px 20px' : '120px 48px',
+            textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+            {/* glow */}
+            <div style={{ position: 'absolute', top: '50%', left: '50%',
+              transform: 'translate(-50%,-50%)', width: 640, height: 640,
+              borderRadius: '50%', pointerEvents: 'none',
+              background: 'radial-gradient(circle,rgba(6,214,160,0.07) 0%,transparent 70%)',
+              filter: 'blur(48px)' }} />
+
+            <div style={{ position: 'relative' }}>
+              <h2 style={{ fontSize: isMobile ? 30 : 48, fontWeight: 800,
+                marginBottom: 16, letterSpacing: '-0.02em' }}>
+                开始使用<span style={{ color: C.primary, fontFamily: 'ui-monospace,monospace' }}>懂点Code</span>
+              </h2>
+              <p style={{ color: C.text1, fontSize: 16, maxWidth: 380,
+                margin: '0 auto 36px', lineHeight: 1.7 }}>
+                注册即可获得 API Key，接入任意大模型，按量计费，随时充值
+              </p>
+              <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <Link to='/register'>
+                  <button style={{ padding: '14px 40px', background: C.primary,
+                    color: '#060810', border: 'none', borderRadius: 12,
+                    fontSize: 16, fontWeight: 700, cursor: 'pointer', letterSpacing: '-0.01em' }}>
+                    免费注册
+                  </button>
+                </Link>
+                <Link to='/pricing'>
+                  <button style={{ padding: '14px 32px', background: 'transparent',
+                    color: C.text0, border: `1px solid ${C.border}`, borderRadius: 12,
+                    fontSize: 16, fontWeight: 600, cursor: 'pointer' }}>
+                    查看价格
+                  </button>
+                </Link>
+              </div>
+            </div>
+          </section>
+        </>
       ) : (
         <div className='overflow-x-hidden w-full'>
           {homePageContent.startsWith('https://') ? (
-            <iframe
-              src={homePageContent}
-              className='w-full h-screen border-none'
-            />
+            <iframe src={homePageContent} className='w-full h-screen border-none' />
           ) : (
-            <div
-              className='mt-[60px]'
-              dangerouslySetInnerHTML={{ __html: homePageContent }}
-            />
+            <div className='mt-[60px]' dangerouslySetInnerHTML={{ __html: homePageContent }} />
           )}
         </div>
       )}

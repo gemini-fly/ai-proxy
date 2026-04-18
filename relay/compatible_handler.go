@@ -448,6 +448,8 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 			logger.LogError(ctx, "error consuming token remain quota: "+err.Error())
 		}
 	}
+	// Clear inflight record: request completed normally, no crash refund needed
+	service.ClearInflightRequest(ctx.GetString(common.RequestIdKey))
 
 	logModel := modelName
 	if strings.HasPrefix(logModel, "gpt-4-gizmo") {

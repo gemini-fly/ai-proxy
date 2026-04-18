@@ -2,13 +2,16 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"embed"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
@@ -171,9 +174,41 @@ func main() {
 	// Log startup success message
 	common.LogStartupSuccess(startTime, port)
 
-	err = server.Run(":" + port)
-	if err != nil {
-		common.FatalLog("failed to start HTTP server: " + err.Error())
+	// ── Graceful shutdown ─────────────────────────────────────
+	httpServer := &http.Server{
+		Addr:    ":" + port,
+		Handler: server,
+	}
+
+	// Start server in background goroutine
+	go func() {
+		if err = httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			common.FatalLog("failed to start HTTP server: " + err.Error())
+		}
+	}()
+
+	// Wait for interrupt signal (SIGTERM from docker/k8s, or SIGINT from Ctrl+C)
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	common.SysLog("shutdown signal received, draining connections...")
+
+	// Give in-flight requests up to 5 minutes to complete (for long AI streaming)
+	shutdownTimeout := 5 * time.Minute
+	if t := os.Getenv("SHUTDOWN_TIMEOUT"); t != "" {
+		if d, err := time.ParseDuration(t); err == nil {
+			shutdownTimeout = d
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	defer cancel()
+
+	if err = httpServer.Shutdown(ctx); err != nil {
+		common.SysError("forced shutdown after timeout: " + err.Error())
+	} else {
+		common.SysLog("server gracefully stopped")
 	}
 }
 
@@ -266,5 +301,9 @@ func InitResources() error {
 	if err != nil {
 		return err
 	}
+
+	// Refund any pre-consumed quota that was orphaned by a previous node crash
+	go service.RefundOrphanedInflightQuota()
+
 	return nil
 }

@@ -249,8 +249,19 @@ func (t *TwoFA) ValidateTOTPAndUpdateUsage(code string) (bool, error) {
 		return false, nil
 	}
 
-	// 验证成功，重置失败次数并更新最后使用时间
+	// Replay prevention: reject if this same 30-second time-step was already used.
+	// TOTP codes are valid for one 30s window; reusing the same code in that window
+	// would allow session hijacking if traffic were intercepted.
 	now := time.Now()
+	if t.LastUsedAt != nil {
+		// Same time-step = both timestamps fall in the same 30s bucket
+		const totpPeriod = 30
+		if now.Unix()/totpPeriod == t.LastUsedAt.Unix()/totpPeriod {
+			return false, fmt.Errorf("验证码已使用，请等待下一个验证码（每30秒更新）")
+		}
+	}
+
+	// 验证成功，重置失败次数并更新最后使用时间
 	t.FailedAttempts = 0
 	t.LockedUntil = nil
 	t.LastUsedAt = &now

@@ -53,18 +53,34 @@ func Login(c *gin.Context) {
 		})
 		return
 	}
+
+	// ── Per-username brute-force protection ─────────────────────────
+	// Prevents multi-IP distributed attacks on a single account.
+	// IP-based CriticalRateLimit protects against single-IP brute-force.
+	if locked, waitSecs := common.IsLoginLocked(username); locked {
+		c.JSON(http.StatusTooManyRequests, gin.H{
+			"message": fmt.Sprintf("账号登录尝试过多，请 %d 秒后重试", waitSecs),
+			"success": false,
+		})
+		return
+	}
+
 	user := model.User{
 		Username: username,
 		Password: password,
 	}
 	err = user.ValidateAndFill()
 	if err != nil {
+		// Record failure; lock the account if threshold is reached
+		common.RecordLoginFailure(username)
 		c.JSON(http.StatusOK, gin.H{
 			"message": err.Error(),
 			"success": false,
 		})
 		return
 	}
+	// Password correct – reset the failure counter
+	common.ResetLoginFailure(username)
 
 	// 检查是否启用2FA
 	if model.IsTwoFAEnabled(user.Id) {
@@ -168,7 +184,14 @@ func Register(c *gin.Context) {
 	if err := common.Validate.Struct(&user); err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
-			"message": "输入不合法 " + err.Error(),
+			"message": common.TranslateValidationError(err),
+		})
+		return
+	}
+	if err := common.ValidateStrongPassword(user.Password); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
 		})
 		return
 	}
@@ -613,7 +636,7 @@ func UpdateUser(c *gin.Context) {
 	if err := common.Validate.Struct(&updatedUser); err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
-			"message": "输入不合法 " + err.Error(),
+			"message": common.TranslateValidationError(err),
 		})
 		return
 	}
@@ -725,7 +748,7 @@ func UpdateSelf(c *gin.Context) {
 	if err := common.Validate.Struct(&user); err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
-			"message": "输入不合法 " + err.Error(),
+			"message": common.TranslateValidationError(err),
 		})
 		return
 	}
@@ -844,7 +867,14 @@ func CreateUser(c *gin.Context) {
 	if err := common.Validate.Struct(&user); err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
-			"message": "输入不合法 " + err.Error(),
+			"message": common.TranslateValidationError(err),
+		})
+		return
+	}
+	if err := common.ValidateStrongPassword(user.Password); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
 		})
 		return
 	}

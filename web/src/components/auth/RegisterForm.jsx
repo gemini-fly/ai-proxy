@@ -192,6 +192,15 @@ const RegisterForm = () => {
       showInfo('密码长度不得小于 8 位！');
       return;
     }
+    // 强密码校验
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasDigit = /[0-9]/.test(password);
+    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(password);
+    if (!hasUpper || !hasLower || !hasDigit || !hasSpecial) {
+      showInfo('密码强度不足，必须包含大写字母、小写字母、数字及特殊符号（如 !@#$%）');
+      return;
+    }
     if (password !== password2) {
       showInfo('两次输入的密码不一致');
       return;
@@ -521,7 +530,7 @@ const RegisterForm = () => {
                 <Form.Input
                   field='password'
                   label={t('密码')}
-                  placeholder={t('输入密码，最短 8 位，最长 20 位')}
+                  placeholder={t('8位以上，含大小写字母、数字和特殊符号')}
                   name='password'
                   mode='password'
                   onChange={(value) => handleChange('password', value)}

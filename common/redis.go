@@ -61,6 +61,25 @@ func ParseRedisOption() *redis.Options {
 	return opt
 }
 
+// RedisScan safely iterates over keys matching pattern using SCAN cursor (non-blocking).
+func RedisScan(pattern string) ([]string, error) {
+	ctx := context.Background()
+	var keys []string
+	var cursor uint64
+	for {
+		batch, nextCursor, err := RDB.Scan(ctx, cursor, pattern, 100).Result()
+		if err != nil {
+			return nil, err
+		}
+		keys = append(keys, batch...)
+		cursor = nextCursor
+		if cursor == 0 {
+			break
+		}
+	}
+	return keys, nil
+}
+
 func RedisSet(key string, value string, expiration time.Duration) error {
 	if DebugEnabled {
 		SysLog(fmt.Sprintf("Redis SET: key=%s, value=%s, expiration=%v", key, value, expiration))

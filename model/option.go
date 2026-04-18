@@ -146,6 +146,14 @@ func InitOptionMap() {
 	common.OptionMap["AutomaticDisableStatusCodes"] = operation_setting.AutomaticDisableStatusCodesToString()
 	common.OptionMap["ExposeRatioEnabled"] = strconv.FormatBool(ratio_setting.IsExposeRatioEnabled())
 
+	// 对公账户设置默认值
+	common.OptionMap["bank_account_setting.enabled"] = "false"
+	common.OptionMap["bank_account_setting.company_name"] = ""
+	common.OptionMap["bank_account_setting.bank_name"] = ""
+	common.OptionMap["bank_account_setting.account_no"] = ""
+	common.OptionMap["bank_account_setting.bank_branch"] = ""
+	common.OptionMap["bank_account_setting.remark"] = ""
+
 	// 自动添加所有注册的模型配置
 	modelConfigs := config.GlobalConfig.ExportAllConfigs()
 	for k, v := range modelConfigs {
