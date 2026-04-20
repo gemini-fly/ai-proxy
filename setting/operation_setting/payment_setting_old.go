@@ -17,6 +17,13 @@ var Price = 7.3
 var MinTopUp = 1
 var USDExchangeRate = 7.3
 
+// 对公付款信息
+var CorpPayCompanyName = ""
+var CorpPayTaxNumber = ""
+var CorpPayBankName = ""
+var CorpPayBankAccount = ""
+var CorpPayBankBranch = ""
+
 var PayMethods = []map[string]string{
 	{
 		"name":  "支付宝",

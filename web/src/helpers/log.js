@@ -18,9 +18,9 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 export function getLogOther(otherStr) {
-  if (otherStr === undefined || otherStr === '') {
+  if (otherStr === undefined || otherStr === null || otherStr === '') {
     otherStr = '{}';
   }
   let other = JSON.parse(otherStr);
-  return other;
+  return other || {};
 }

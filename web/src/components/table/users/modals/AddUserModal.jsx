@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { API, showError, showSuccess } from '../../../../helpers';
 import { useIsMobile } from '../../../../hooks/common/useIsMobile';
 import {
@@ -42,14 +42,26 @@ const AddUserModal = (props) => {
   const { t } = useTranslation();
   const formApiRef = useRef(null);
   const [loading, setLoading] = useState(false);
+  const [groupOptions, setGroupOptions] = useState([]);
   const isMobile = useIsMobile();
 
   const getInitValues = () => ({
     username: '',
     display_name: '',
     password: '',
+    group: 'default',
     remark: '',
   });
+
+  useEffect(() => {
+    API.get('/api/group/')
+      .then((res) => {
+        if (res?.data?.success) {
+          setGroupOptions(res.data.data.map((g) => ({ label: g, value: g })));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const submit = async (values) => {
     setLoading(true);
@@ -163,6 +175,17 @@ const AddUserModal = (props) => {
                       placeholder={t('请输入密码')}
                       rules={[{ required: true, message: t('请输入密码') }]}
                       showClear
+                    />
+                  </Col>
+                  <Col span={24}>
+                    <Form.Select
+                      field='group'
+                      label={t('用户组')}
+                      placeholder={t('请选择用户组')}
+                      optionList={groupOptions}
+                      allowAdditions
+                      search
+                      rules={[{ required: true, message: t('请选择用户组') }]}
                     />
                   </Col>
                   <Col span={24}>

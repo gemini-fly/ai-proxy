@@ -17,7 +17,7 @@ import {
 } from '@lobehub/icons';
 
 /* ── Design tokens ─────────────────────────────────────────── */
-const C = {
+const DARK_C = {
   bg:         '#06080f',
   surface:    '#0d1117',
   border:     'rgba(255,255,255,0.07)',
@@ -27,6 +27,21 @@ const C = {
   text0:      '#f0f6fc',
   text1:      '#8b949e',
   text2:      '#3d444d',
+  gridLine:   'rgba(255,255,255,0.025)',
+  termShadow: '0 32px 96px rgba(0,0,0,0.7)',
+};
+const LIGHT_C = {
+  bg:         '#ffffff',
+  surface:    '#f6f8fa',
+  border:     'rgba(0,0,0,0.08)',
+  primary:    '#06d6a0',
+  primaryDim: 'rgba(6,214,160,0.10)',
+  accent:     '#ffd166',
+  text0:      '#1c1c1e',
+  text1:      '#636366',
+  text2:      '#8a8a8e',
+  gridLine:   'rgba(0,0,0,0.04)',
+  termShadow: '0 8px 40px rgba(0,0,0,0.12)',
 };
 
 /* ── Static data ───────────────────────────────────────────── */
@@ -77,16 +92,16 @@ const TERMINAL = [
 ];
 
 /* ── Sub-components ─────────────────────────────────────────── */
-const ModelChip = ({ icon, name }) => (
+const ModelChip = ({ icon, name, C: colors }) => (
   <div style={{
     display: 'flex', alignItems: 'center', gap: 8,
     padding: '7px 16px',
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.07)',
+    background: colors?.surface ?? 'rgba(255,255,255,0.04)',
+    border: `1px solid ${colors?.border ?? 'rgba(255,255,255,0.07)'}`,
     borderRadius: 40, whiteSpace: 'nowrap', marginRight: 12,
   }}>
     {icon}
-    <span style={{ fontSize: 13, color: '#8b949e', fontWeight: 500 }}>{name}</span>
+    <span style={{ fontSize: 13, color: colors?.text1 ?? '#8b949e', fontWeight: 500 }}>{name}</span>
   </div>
 );
 
@@ -95,6 +110,7 @@ const Home = () => {
   const { t, i18n } = useTranslation();
   const [statusState] = useContext(StatusContext);
   const actualTheme = useActualTheme();
+  const C = actualTheme === 'dark' ? DARK_C : LIGHT_C;
   const [homePageContentLoaded, setHomePageContentLoaded] = useState(false);
   const [homePageContent, setHomePageContent]             = useState('');
   const [noticeVisible, setNoticeVisible]                 = useState(false);
@@ -174,8 +190,9 @@ const Home = () => {
 
             {/* grid bg */}
             <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
-              backgroundImage: `linear-gradient(rgba(255,255,255,0.025) 1px,transparent 1px),
-                                linear-gradient(90deg,rgba(255,255,255,0.025) 1px,transparent 1px)`,
+              backgroundImage: `linear-gradient(${C.gridLine} 1px,transparent 1px),
+                                linear-gradient(90deg,${C.gridLine} 1px,transparent 1px)`,
+
               backgroundSize: '52px 52px' }} />
 
             {/* glow blobs */}
@@ -286,7 +303,7 @@ const Home = () => {
                 <div style={{
                   background: C.surface, border: `1px solid ${C.border}`,
                   borderRadius: 16, overflow: 'hidden',
-                  boxShadow: '0 32px 96px rgba(0,0,0,0.7)',
+                  boxShadow: C.termShadow,
                 }}>
                   {/* title bar */}
                   <div style={{ padding: '12px 18px', borderBottom: `1px solid ${C.border}`,
@@ -393,14 +410,14 @@ const Home = () => {
             {/* row 1 → left */}
             <div style={{ overflow: 'hidden', marginBottom: 14 }}>
               <div className='ddcode-marquee-left' style={{ display: 'flex', width: 'max-content' }}>
-                {[...INTL, ...INTL].map((m, i) => <ModelChip key={i} icon={m.icon} name={m.name} />)}
+                {[...INTL, ...INTL].map((m, i) => <ModelChip key={i} icon={m.icon} name={m.name} C={C} />)}
               </div>
             </div>
 
             {/* row 2 → right */}
             <div style={{ overflow: 'hidden' }}>
               <div className='ddcode-marquee-right' style={{ display: 'flex', width: 'max-content' }}>
-                {[...CN, ...CN].map((m, i) => <ModelChip key={i} icon={m.icon} name={m.name} />)}
+                {[...CN, ...CN].map((m, i) => <ModelChip key={i} icon={m.icon} name={m.name} C={C} />)}
               </div>
             </div>
           </section>

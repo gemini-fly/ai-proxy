@@ -28,6 +28,7 @@ import {
   verifyJSON,
 } from '../../../helpers';
 import { useTranslation } from 'react-i18next';
+import ArrayEditor from '../../../components/settings/editors/ArrayEditor';
 import Text from '@douyinfe/semi-ui/lib/es/typography/text';
 
 const GEMINI_SETTING_EXAMPLE = {
@@ -206,32 +207,15 @@ export default function SettingGeminiModel(props) {
             </Row>
             <Row>
               <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-                <Form.TextArea
-                  field={'gemini.supported_imagine_models'}
+                <ArrayEditor
                   label={t('支持的图像模型')}
-                  placeholder={
-                    t('例如：') +
-                    '\n' +
-                    JSON.stringify(
-                      ['gemini-2.0-flash-exp-image-generation'],
-                      null,
-                      2,
-                    )
+                  columnLabel={t('模型名称')}
+                  placeholder='gemini-2.0-flash-exp-image-generation'
+                  itemWidth={320}
+                  value={inputs['gemini.supported_imagine_models']}
+                  onChange={(v) =>
+                    setInputs({ ...inputs, 'gemini.supported_imagine_models': v })
                   }
-                  onChange={(value) =>
-                    setInputs({
-                      ...inputs,
-                      'gemini.supported_imagine_models': value,
-                    })
-                  }
-                  trigger='blur'
-                  stopValidateWithError
-                  rules={[
-                    {
-                      validator: (rule, value) => verifyJSON(value),
-                      message: t('不是合法的 JSON 字符串'),
-                    },
-                  ]}
                 />
               </Col>
             </Row>

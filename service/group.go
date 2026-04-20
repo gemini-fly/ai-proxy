@@ -8,8 +8,11 @@ import (
 )
 
 func GetUserUsableGroups(userGroup string) map[string]string {
-	groupsCopy := setting.GetUserUsableGroupsCopy()
+	groupsCopy := make(map[string]string)
 	if userGroup != "" {
+		// 用户只能使用自己所属的分组，以及管理员通过 GroupSpecialUsableGroup 额外授权的分组
+		groupsCopy[userGroup] = setting.GetUsableGroupDescription(userGroup)
+
 		specialSettings, b := ratio_setting.GetGroupRatioSetting().GroupSpecialUsableGroup.Get(userGroup)
 		if b {
 			// 处理特殊可用分组
@@ -27,10 +30,6 @@ func GetUserUsableGroups(userGroup string) map[string]string {
 					groupsCopy[specialGroup] = desc
 				}
 			}
-		}
-		// 如果userGroup不在UserUsableGroups中，返回UserUsableGroups + userGroup
-		if _, ok := groupsCopy[userGroup]; !ok {
-			groupsCopy[userGroup] = "用户分组"
 		}
 	}
 	return groupsCopy

@@ -34,10 +34,9 @@ import { UserContext } from '../../context/User';
 import { StatusContext } from '../../context/Status';
 
 import RechargeCard from './RechargeCard';
-import InvitationCard from './InvitationCard';
-import TransferModal from './modals/TransferModal';
 import PaymentConfirmModal from './modals/PaymentConfirmModal';
 import TopupHistoryModal from './modals/TopupHistoryModal';
+import TransferModal from './modals/TransferModal';
 
 const TopUp = () => {
   const { t } = useTranslation();
@@ -99,6 +98,9 @@ const TopUp = () => {
 
   // 对公账户信息
   const [bankAccount, setBankAccount] = useState(null);
+
+  // 对公付款信息
+  const [corpPayInfo, setCorpPayInfo] = useState(null);
 
   const topUp = async () => {
     if (redemptionCode === '') {
@@ -412,6 +414,19 @@ const TopUp = () => {
             setPresetAmounts(generatePresetAmounts(minTopUpValue));
           }
 
+          // 解析对公付款信息
+          if (data.corp_pay_company_name) {
+            setCorpPayInfo({
+              companyName: data.corp_pay_company_name || '',
+              taxNumber:   data.corp_pay_tax_number   || '',
+              bankName:    data.corp_pay_bank_name    || '',
+              bankBranch:  data.corp_pay_bank_branch  || '',
+              bankAccount: data.corp_pay_bank_account || '',
+            });
+          } else {
+            setCorpPayInfo(null);
+          }
+
           // 初始化显示实付金额
           getAmount(minTopUpValue);
         } catch (e) {
@@ -672,115 +687,37 @@ const TopUp = () => {
 
       {/* 用户信息头部 */}
       <div className='space-y-6'>
-        <div className='grid grid-cols-1 lg:grid-cols-12 gap-6'>
-          {/* 左侧充值区域 */}
-          <div className='lg:col-span-7 space-y-6 w-full'>
-            <RechargeCard
-              t={t}
-              enableOnlineTopUp={enableOnlineTopUp}
-              enableStripeTopUp={enableStripeTopUp}
-              enableCreemTopUp={enableCreemTopUp}
-              creemProducts={creemProducts}
-              creemPreTopUp={creemPreTopUp}
-              presetAmounts={presetAmounts}
-              selectedPreset={selectedPreset}
-              selectPresetAmount={selectPresetAmount}
-              formatLargeNumber={formatLargeNumber}
-              priceRatio={priceRatio}
-              topUpCount={topUpCount}
-              minTopUp={minTopUp}
-              renderQuotaWithAmount={renderQuotaWithAmount}
-              getAmount={getAmount}
-              setTopUpCount={setTopUpCount}
-              setSelectedPreset={setSelectedPreset}
-              renderAmount={renderAmount}
-              amountLoading={amountLoading}
-              payMethods={payMethods}
-              preTopUp={preTopUp}
-              paymentLoading={paymentLoading}
-              payWay={payWay}
-              redemptionCode={redemptionCode}
-              setRedemptionCode={setRedemptionCode}
-              topUp={topUp}
-              isSubmitting={isSubmitting}
-              topUpLink={topUpLink}
-              openTopUpLink={openTopUpLink}
-              userState={userState}
-              renderQuota={renderQuota}
-              statusLoading={statusLoading}
-              topupInfo={topupInfo}
-              onOpenHistory={handleOpenHistory}
-            />
-          </div>
-
-          {/* 右侧信息区域 */}
-          <div className='lg:col-span-5 space-y-6'>
-            <InvitationCard
-              t={t}
-              userState={userState}
-              renderQuota={renderQuota}
-              setOpenTransfer={setOpenTransfer}
-              affLink={affLink}
-              handleAffLinkClick={handleAffLinkClick}
-            />
-            {/* 对公账户信息卡片 */}
-            {bankAccount && (
-              <div
-                style={{
-                  background: 'var(--semi-color-bg-2)',
-                  border: '1px solid var(--semi-color-border)',
-                  borderRadius: '12px',
-                  padding: '20px',
-                }}
-              >
-                <div style={{ marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--semi-color-text-0)' }}>
-                    {t('对公汇款账户')}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {bankAccount.company_name && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: 'var(--semi-color-text-2)', fontSize: '13px', minWidth: '70px' }}>{t('收款方')}</span>
-                      <span style={{ color: 'var(--semi-color-text-0)', fontWeight: 500, textAlign: 'right' }}>{bankAccount.company_name}</span>
-                    </div>
-                  )}
-                  {bankAccount.bank_name && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: 'var(--semi-color-text-2)', fontSize: '13px', minWidth: '70px' }}>{t('开户银行')}</span>
-                      <span style={{ color: 'var(--semi-color-text-0)', fontWeight: 500, textAlign: 'right' }}>{bankAccount.bank_name}</span>
-                    </div>
-                  )}
-                  {bankAccount.account_no && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: 'var(--semi-color-text-2)', fontSize: '13px', minWidth: '70px' }}>{t('银行账号')}</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ color: 'var(--semi-color-text-0)', fontWeight: 500, fontFamily: 'monospace', letterSpacing: '0.5px' }}>{bankAccount.account_no}</span>
-                        <span
-                          style={{ cursor: 'pointer', color: 'var(--semi-color-primary)', fontSize: '12px' }}
-                          onClick={async () => { await copy(bankAccount.account_no); showSuccess(t('账号已复制')); }}
-                        >
-                          {t('复制')}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                  {bankAccount.bank_branch && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: 'var(--semi-color-text-2)', fontSize: '13px', minWidth: '70px' }}>{t('开户支行')}</span>
-                      <span style={{ color: 'var(--semi-color-text-0)', fontWeight: 500, textAlign: 'right' }}>{bankAccount.bank_branch}</span>
-                    </div>
-                  )}
-                  {bankAccount.remark && (
-                    <div style={{ borderTop: '1px dashed var(--semi-color-border)', paddingTop: '10px', marginTop: '4px' }}>
-                      <span style={{ color: 'var(--semi-color-text-2)', fontSize: '12px' }}>{t('备注')}：{bankAccount.remark}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <RechargeCard
+          t={t}
+          enableOnlineTopUp={enableOnlineTopUp}
+          enableStripeTopUp={enableStripeTopUp}
+          enableCreemTopUp={enableCreemTopUp}
+          creemProducts={creemProducts}
+          creemPreTopUp={creemPreTopUp}
+          presetAmounts={presetAmounts}
+          selectedPreset={selectedPreset}
+          selectPresetAmount={selectPresetAmount}
+          formatLargeNumber={formatLargeNumber}
+          priceRatio={priceRatio}
+          topUpCount={topUpCount}
+          minTopUp={minTopUp}
+          renderQuotaWithAmount={renderQuotaWithAmount}
+          getAmount={getAmount}
+          setTopUpCount={setTopUpCount}
+          setSelectedPreset={setSelectedPreset}
+          renderAmount={renderAmount}
+          amountLoading={amountLoading}
+          payMethods={payMethods}
+          preTopUp={preTopUp}
+          paymentLoading={paymentLoading}
+          payWay={payWay}
+          userState={userState}
+          renderQuota={renderQuota}
+          statusLoading={statusLoading}
+          topupInfo={topupInfo}
+          onOpenHistory={handleOpenHistory}
+          corpPayInfo={corpPayInfo}
+        />
       </div>
     </div>
   );

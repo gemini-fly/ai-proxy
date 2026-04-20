@@ -22,6 +22,7 @@ import { Card, Spin, Tabs } from '@douyinfe/semi-ui';
 import { useTranslation } from 'react-i18next';
 
 import GroupRatioSettings from '../../pages/Setting/Ratio/GroupRatioSettings';
+import GroupSettings from '../../pages/Setting/Ratio/GroupSettings';
 import ModelRatioSettings from '../../pages/Setting/Ratio/ModelRatioSettings';
 import ModelSettingsVisualEditor from '../../pages/Setting/Ratio/ModelSettingsVisualEditor';
 import ModelRatioNotSetEditor from '../../pages/Setting/Ratio/ModelRationNotSetEditor';
@@ -99,6 +100,9 @@ const RatioSetting = () => {
       {/* 模型倍率设置以及可视化编辑器 */}
       <Card style={{ marginTop: '10px' }}>
         <Tabs type='card'>
+          <Tabs.TabPane tab={t('分组设置')} itemKey='group_manage'>
+            <GroupSettings options={inputs} refresh={onRefresh} />
+          </Tabs.TabPane>
           <Tabs.TabPane tab={t('模型倍率设置')} itemKey='model'>
             <ModelRatioSettings options={inputs} refresh={onRefresh} />
           </Tabs.TabPane>

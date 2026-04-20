@@ -33,9 +33,9 @@ import {
   showError,
   showSuccess,
   showWarning,
-  verifyJSON,
 } from '../../../helpers';
 import { useTranslation } from 'react-i18next';
+import KVEditor from '../../../components/settings/editors/KVEditor';
 
 export default function ModelRatioSettings(props) {
   const [loading, setLoading] = useState(false);
@@ -141,156 +141,92 @@ export default function ModelRatioSettings(props) {
         style={{ marginBottom: 15 }}
       >
         <Row gutter={16}>
-          <Col xs={24} sm={16}>
-            <Form.TextArea
+          <Col xs={24} sm={20}>
+            <KVEditor
               label={t('模型固定价格')}
               extraText={t('一次调用消耗多少刀，优先级大于模型倍率')}
-              placeholder={t(
-                '为一个 JSON 文本，键为模型名称，值为一次调用消耗多少刀，比如 "gpt-4-gizmo-*": 0.1，一次消耗0.1刀',
-              )}
-              field={'ModelPrice'}
-              autosize={{ minRows: 6, maxRows: 12 }}
-              trigger='blur'
-              stopValidateWithError
-              rules={[
-                {
-                  validator: (rule, value) => verifyJSON(value),
-                  message: '不是合法的 JSON 字符串',
-                },
-              ]}
-              onChange={(value) => setInputs({ ...inputs, ModelPrice: value })}
+              keyLabel={t('模型名称')}
+              valueLabel={t('价格（刀/次）')}
+              keyPlaceholder='gpt-4-gizmo-*'
+              maxKeyWidth={260}
+              value={inputs.ModelPrice}
+              onChange={(v) => setInputs({ ...inputs, ModelPrice: v })}
             />
           </Col>
         </Row>
         <Row gutter={16}>
-          <Col xs={24} sm={16}>
-            <Form.TextArea
+          <Col xs={24} sm={20}>
+            <KVEditor
               label={t('模型倍率')}
-              placeholder={t('为一个 JSON 文本，键为模型名称，值为倍率')}
-              field={'ModelRatio'}
-              autosize={{ minRows: 6, maxRows: 12 }}
-              trigger='blur'
-              stopValidateWithError
-              rules={[
-                {
-                  validator: (rule, value) => verifyJSON(value),
-                  message: '不是合法的 JSON 字符串',
-                },
-              ]}
-              onChange={(value) => setInputs({ ...inputs, ModelRatio: value })}
+              keyLabel={t('模型名称')}
+              valueLabel={t('倍率')}
+              maxKeyWidth={260}
+              value={inputs.ModelRatio}
+              onChange={(v) => setInputs({ ...inputs, ModelRatio: v })}
             />
           </Col>
         </Row>
         <Row gutter={16}>
-          <Col xs={24} sm={16}>
-            <Form.TextArea
+          <Col xs={24} sm={20}>
+            <KVEditor
               label={t('提示缓存倍率')}
-              placeholder={t('为一个 JSON 文本，键为模型名称，值为倍率')}
-              field={'CacheRatio'}
-              autosize={{ minRows: 6, maxRows: 12 }}
-              trigger='blur'
-              stopValidateWithError
-              rules={[
-                {
-                  validator: (rule, value) => verifyJSON(value),
-                  message: '不是合法的 JSON 字符串',
-                },
-              ]}
-              onChange={(value) => setInputs({ ...inputs, CacheRatio: value })}
+              keyLabel={t('模型名称')}
+              valueLabel={t('缓存倍率')}
+              maxKeyWidth={260}
+              value={inputs.CacheRatio}
+              onChange={(v) => setInputs({ ...inputs, CacheRatio: v })}
             />
           </Col>
         </Row>
         <Row gutter={16}>
-          <Col xs={24} sm={16}>
-            <Form.TextArea
+          <Col xs={24} sm={20}>
+            <KVEditor
               label={t('模型补全倍率（仅对自定义模型有效）')}
               extraText={t('仅对自定义模型有效')}
-              placeholder={t('为一个 JSON 文本，键为模型名称，值为倍率')}
-              field={'CompletionRatio'}
-              autosize={{ minRows: 6, maxRows: 12 }}
-              trigger='blur'
-              stopValidateWithError
-              rules={[
-                {
-                  validator: (rule, value) => verifyJSON(value),
-                  message: '不是合法的 JSON 字符串',
-                },
-              ]}
-              onChange={(value) =>
-                setInputs({ ...inputs, CompletionRatio: value })
-              }
+              keyLabel={t('模型名称')}
+              valueLabel={t('补全倍率')}
+              maxKeyWidth={260}
+              value={inputs.CompletionRatio}
+              onChange={(v) => setInputs({ ...inputs, CompletionRatio: v })}
             />
           </Col>
         </Row>
         <Row gutter={16}>
-          <Col xs={24} sm={16}>
-            <Form.TextArea
+          <Col xs={24} sm={20}>
+            <KVEditor
               label={t('图片输入倍率（仅部分模型支持该计费）')}
-              extraText={t(
-                '图片输入相关的倍率设置，键为模型名称，值为倍率，仅部分模型支持该计费',
-              )}
-              placeholder={t(
-                '为一个 JSON 文本，键为模型名称，值为倍率，例如：{"gpt-image-1": 2}',
-              )}
-              field={'ImageRatio'}
-              autosize={{ minRows: 6, maxRows: 12 }}
-              trigger='blur'
-              stopValidateWithError
-              rules={[
-                {
-                  validator: (rule, value) => verifyJSON(value),
-                  message: '不是合法的 JSON 字符串',
-                },
-              ]}
-              onChange={(value) => setInputs({ ...inputs, ImageRatio: value })}
+              extraText={t('图片输入相关的倍率设置，键为模型名称，值为倍率，仅部分模型支持该计费')}
+              keyLabel={t('模型名称')}
+              valueLabel={t('图片倍率')}
+              maxKeyWidth={260}
+              value={inputs.ImageRatio}
+              onChange={(v) => setInputs({ ...inputs, ImageRatio: v })}
             />
           </Col>
         </Row>
         <Row gutter={16}>
-          <Col xs={24} sm={16}>
-            <Form.TextArea
+          <Col xs={24} sm={20}>
+            <KVEditor
               label={t('音频倍率（仅部分模型支持该计费）')}
               extraText={t('音频输入相关的倍率设置，键为模型名称，值为倍率')}
-              placeholder={t(
-                '为一个 JSON 文本，键为模型名称，值为倍率，例如：{"gpt-4o-audio-preview": 16}',
-              )}
-              field={'AudioRatio'}
-              autosize={{ minRows: 6, maxRows: 12 }}
-              trigger='blur'
-              stopValidateWithError
-              rules={[
-                {
-                  validator: (rule, value) => verifyJSON(value),
-                  message: '不是合法的 JSON 字符串',
-                },
-              ]}
-              onChange={(value) => setInputs({ ...inputs, AudioRatio: value })}
+              keyLabel={t('模型名称')}
+              valueLabel={t('音频倍率')}
+              maxKeyWidth={260}
+              value={inputs.AudioRatio}
+              onChange={(v) => setInputs({ ...inputs, AudioRatio: v })}
             />
           </Col>
         </Row>
         <Row gutter={16}>
-          <Col xs={24} sm={16}>
-            <Form.TextArea
+          <Col xs={24} sm={20}>
+            <KVEditor
               label={t('音频补全倍率（仅部分模型支持该计费）')}
-              extraText={t(
-                '音频输出补全相关的倍率设置，键为模型名称，值为倍率',
-              )}
-              placeholder={t(
-                '为一个 JSON 文本，键为模型名称，值为倍率，例如：{"gpt-4o-realtime": 2}',
-              )}
-              field={'AudioCompletionRatio'}
-              autosize={{ minRows: 6, maxRows: 12 }}
-              trigger='blur'
-              stopValidateWithError
-              rules={[
-                {
-                  validator: (rule, value) => verifyJSON(value),
-                  message: '不是合法的 JSON 字符串',
-                },
-              ]}
-              onChange={(value) =>
-                setInputs({ ...inputs, AudioCompletionRatio: value })
-              }
+              extraText={t('音频输出补全相关的倍率设置，键为模型名称，值为倍率')}
+              keyLabel={t('模型名称')}
+              valueLabel={t('补全倍率')}
+              maxKeyWidth={260}
+              value={inputs.AudioCompletionRatio}
+              onChange={(v) => setInputs({ ...inputs, AudioCompletionRatio: v })}
             />
           </Col>
         </Row>

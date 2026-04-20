@@ -37,6 +37,7 @@ import {
   verifyJSON,
 } from '../../../helpers';
 import { useTranslation } from 'react-i18next';
+import ArrayEditor from '../../../components/settings/editors/ArrayEditor';
 
 const thinkingExample = JSON.stringify(
   ['moonshotai/kimi-k2-thinking', 'kimi-k2-thinking'],
@@ -206,32 +207,17 @@ export default function SettingGlobalModel(props) {
             </Row>
             <Row>
               <Col span={24}>
-                <Form.TextArea
+                <ArrayEditor
                   label={t('禁用思考处理的模型列表')}
-                  field={'global.thinking_model_blacklist'}
-                  placeholder={
-                    t('例如：') +
-                    '\n' +
-                    thinkingExample
-                  }
-                  rows={4}
-                  rules={[
-                    {
-                      validator: (rule, value) => {
-                        if (!value || value.trim() === '') return true;
-                        return verifyJSON(value);
-                      },
-                      message: t('不是合法的 JSON 字符串'),
-                    },
-                  ]}
+                  columnLabel={t('模型名称')}
+                  placeholder={t('例如：gemini-2.5-pro-preview')}
+                  itemWidth={360}
                   extraText={t(
                     '列出的模型将不会自动添加或移除-thinking/-nothinking 后缀',
                   )}
-                  onChange={(value) =>
-                    setInputs({
-                      ...inputs,
-                      'global.thinking_model_blacklist': value,
-                    })
+                  value={inputs['global.thinking_model_blacklist']}
+                  onChange={(v) =>
+                    setInputs({ ...inputs, 'global.thinking_model_blacklist': v })
                   }
                 />
               </Col>

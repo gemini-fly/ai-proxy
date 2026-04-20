@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Avatar,
   Typography,
@@ -32,6 +32,9 @@ import {
   Col,
   Spin,
   Tooltip,
+  Modal,
+  Descriptions,
+  Divider,
 } from '@douyinfe/semi-ui';
 import { SiAlipay, SiWechat, SiStripe } from 'react-icons/si';
 import {
@@ -41,8 +44,9 @@ import {
   BarChart2,
   TrendingUp,
   Receipt,
+  Landmark,
+  Copy,
 } from 'lucide-react';
-import { IconGift } from '@douyinfe/semi-icons';
 import { useMinimumLoadingTime } from '../../hooks/common/useMinimumLoadingTime';
 import { getCurrencyConfig } from '../../helpers/render';
 
@@ -72,21 +76,30 @@ const RechargeCard = ({
   preTopUp,
   paymentLoading,
   payWay,
-  redemptionCode,
-  setRedemptionCode,
-  topUp,
-  isSubmitting,
-  topUpLink,
-  openTopUpLink,
   userState,
   renderQuota,
   statusLoading,
   topupInfo,
   onOpenHistory,
+  corpPayInfo,
 }) => {
   const onlineFormApiRef = useRef(null);
-  const redeemFormApiRef = useRef(null);
   const showAmountSkeleton = useMinimumLoadingTime(amountLoading);
+  const [showCorpPayModal, setShowCorpPayModal] = useState(false);
+
+  // 是否有对公付款信息配置
+  const hasCorpPayInfo = corpPayInfo && corpPayInfo.companyName;
+
+  const copyText = (text) => {
+    navigator.clipboard?.writeText(text).then(() => {}).catch(() => {
+      const el = document.createElement('textarea');
+      el.value = text;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+    });
+  };
   console.log(' enabled screem ?', enableCreemTopUp, ' products ?', creemProducts);
   return (
     <Card className='!rounded-2xl shadow-sm border-0'>
@@ -516,7 +529,7 @@ const RechargeCard = ({
             <Banner
               type='info'
               description={t(
-                '管理员未开启在线充值功能，请联系管理员开启或使用兑换码充值。',
+                '管理员未开启在线充值功能，请联系管理员开启。',
               )}
               className='!rounded-xl'
               closeIcon={null}
@@ -524,58 +537,86 @@ const RechargeCard = ({
           )}
         </Card>
 
-        {/* 兑换码充值 */}
-        <Card
-          className='!rounded-xl w-full'
-          title={
-            <Text type='tertiary' strong>
-              {t('兑换码充值')}
-            </Text>
-          }
-        >
-          <Form
-            getFormApi={(api) => (redeemFormApiRef.current = api)}
-            initValues={{ redemptionCode: redemptionCode }}
-          >
-            <Form.Input
-              field='redemptionCode'
-              noLabel={true}
-              placeholder={t('请输入兑换码')}
-              value={redemptionCode}
-              onChange={(value) => setRedemptionCode(value)}
-              prefix={<IconGift />}
-              suffix={
-                <div className='flex items-center gap-2'>
-                  <Button
-                    type='primary'
-                    theme='solid'
-                    onClick={topUp}
-                    loading={isSubmitting}
-                  >
-                    {t('兑换额度')}
-                  </Button>
+        {/* 对公付款入口 */}
+        {hasCorpPayInfo && (
+          <Card className='!rounded-xl w-full' bodyStyle={{ padding: '16px 20px' }}>
+            <div className='flex items-center justify-between'>
+              <div className='flex items-center gap-3'>
+                <div className='w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center'>
+                  <Landmark size={18} className='text-amber-600' />
                 </div>
-              }
-              showClear
-              style={{ width: '100%' }}
-              extraText={
-                topUpLink && (
-                  <Text type='tertiary'>
-                    {t('在找兑换码？')}
-                    <Text
-                      type='secondary'
-                      underline
-                      className='cursor-pointer'
-                      onClick={openTopUpLink}
-                    >
-                      {t('购买兑换码')}
-                    </Text>
-                  </Text>
-                )
-              }
-            />
-          </Form>
-        </Card>
+                <div>
+                  <div className='font-medium text-sm'>{t('对公付款')}</div>
+                  <div className='text-xs text-gray-500'>{t('企业银行转账，适合大额充值')}</div>
+                </div>
+              </div>
+              <Button
+                theme='outline'
+                type='tertiary'
+                className='!rounded-lg'
+                icon={<Landmark size={16} />}
+                onClick={() => setShowCorpPayModal(true)}
+              >
+                {t('查看收款信息')}
+              </Button>
+            </div>
+          </Card>
+        )}
+
+        {/* 对公付款弹窗 */}
+        <Modal
+          title={
+            <div className='flex items-center gap-2'>
+              <Landmark size={18} className='text-amber-600' />
+              <span>{t('对公付款信息')}</span>
+            </div>
+          }
+          visible={showCorpPayModal}
+          onCancel={() => setShowCorpPayModal(false)}
+          footer={
+            <Button theme='solid' onClick={() => setShowCorpPayModal(false)}>
+              {t('关闭')}
+            </Button>
+          }
+          centered
+          width={520}
+        >
+          <div className='space-y-3 py-2'>
+            {[
+              { label: t('公司名称'),           value: corpPayInfo?.companyName },
+              { label: t('统一社会信用代码'),   value: corpPayInfo?.taxNumber },
+              { label: t('开户银行'),           value: corpPayInfo?.bankName },
+              { label: t('开户行支行'),         value: corpPayInfo?.bankBranch },
+              { label: t('银行账号'),           value: corpPayInfo?.bankAccount },
+            ].filter(item => item.value).map((item, idx) => (
+              <div
+                key={idx}
+                className='flex items-center justify-between px-4 py-3 rounded-xl'
+                style={{ background: 'var(--semi-color-fill-0)' }}
+              >
+                <div>
+                  <div className='text-xs text-gray-500 mb-0.5'>{item.label}</div>
+                  <div className='font-medium text-sm select-all'>{item.value}</div>
+                </div>
+                <Button
+                  size='small'
+                  theme='borderless'
+                  type='tertiary'
+                  icon={<Copy size={14} />}
+                  onClick={() => copyText(item.value)}
+                >
+                  {t('复制')}
+                </Button>
+              </div>
+            ))}
+            <Divider />
+            <div className='text-xs text-gray-400 space-y-1 px-1'>
+              <div>• {t('请将付款凭证截图发送给管理员，并备注您的账户用户名')}</div>
+              <div>• {t('管理员确认到账后将为您手动充值额度')}</div>
+            </div>
+          </div>
+        </Modal>
+
       </Space>
     </Card>
   );

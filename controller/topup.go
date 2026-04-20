@@ -49,10 +49,15 @@ func GetTopUpInfo(c *gin.Context) {
 	}
 
 	data := gin.H{
-		"enable_online_topup": operation_setting.PayAddress != "" && operation_setting.EpayId != "" && operation_setting.EpayKey != "",
-		"enable_stripe_topup": setting.StripeApiSecret != "" && setting.StripeWebhookSecret != "" && setting.StripePriceId != "",
-		"enable_creem_topup":  setting.CreemApiKey != "" && setting.CreemProducts != "[]",
-		"creem_products":      setting.CreemProducts,
+		"enable_online_topup":   operation_setting.PayAddress != "" && operation_setting.EpayId != "" && operation_setting.EpayKey != "",
+		"enable_stripe_topup":   setting.StripeApiSecret != "" && setting.StripeWebhookSecret != "" && setting.StripePriceId != "",
+		"enable_creem_topup":    setting.CreemApiKey != "" && setting.CreemProducts != "[]",
+		"creem_products":        setting.CreemProducts,
+		"corp_pay_company_name": operation_setting.CorpPayCompanyName,
+		"corp_pay_tax_number":   operation_setting.CorpPayTaxNumber,
+		"corp_pay_bank_name":    operation_setting.CorpPayBankName,
+		"corp_pay_bank_account": operation_setting.CorpPayBankAccount,
+		"corp_pay_bank_branch":  operation_setting.CorpPayBankBranch,
 		"pay_methods":         payMethods,
 		"min_topup":           operation_setting.MinTopUp,
 		"stripe_min_topup":    setting.StripeMinTopUp,

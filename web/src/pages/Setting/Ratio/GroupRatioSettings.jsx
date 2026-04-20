@@ -28,6 +28,8 @@ import {
   verifyJSON,
 } from '../../../helpers';
 import { useTranslation } from 'react-i18next';
+import KVEditor from '../../../components/settings/editors/KVEditor';
+import ArrayEditor from '../../../components/settings/editors/ArrayEditor';
 
 export default function GroupRatioSettings(props) {
   const { t } = useTranslation();
@@ -118,47 +120,33 @@ export default function GroupRatioSettings(props) {
       >
         <Row gutter={16}>
           <Col xs={24} sm={16}>
-            <Form.TextArea
+            <KVEditor
               label={t('分组倍率')}
-              placeholder={t('为一个 JSON 文本，键为分组名称，值为倍率')}
+              keyLabel={t('分组名')}
+              valueLabel={t('倍率')}
+              keyPlaceholder='vip'
               extraText={t(
-                '分组倍率设置，可以在此处新增分组或修改现有分组的倍率，格式为 JSON 字符串，例如：{"vip": 0.5, "test": 1}，表示 vip 分组的倍率为 0.5，test 分组的倍率为 1',
+                '分组倍率设置，可以在此处新增分组或修改现有分组的倍率',
               )}
-              field={'GroupRatio'}
-              autosize={{ minRows: 6, maxRows: 12 }}
-              trigger='blur'
-              stopValidateWithError
-              rules={[
-                {
-                  validator: (rule, value) => verifyJSON(value),
-                  message: t('不是合法的 JSON 字符串'),
-                },
-              ]}
-              onChange={(value) => setInputs({ ...inputs, GroupRatio: value })}
+              value={inputs.GroupRatio}
+              onChange={(v) => setInputs({ ...inputs, GroupRatio: v })}
             />
           </Col>
         </Row>
         <Row gutter={16}>
           <Col xs={24} sm={16}>
-            <Form.TextArea
+            <KVEditor
               label={t('用户可选分组')}
-              placeholder={t('为一个 JSON 文本，键为分组名称，值为分组描述')}
+              keyLabel={t('分组名')}
+              valueLabel={t('展示名称')}
+              keyPlaceholder='vip'
+              valuePlaceholder={t('例如：VIP 用户')}
+              valueType='string'
               extraText={t(
-                '用户新建令牌时可选的分组，格式为 JSON 字符串，例如：{"vip": "VIP 用户", "test": "测试"}，表示用户可以选择 vip 分组和 test 分组',
+                '用户新建令牌时可选的分组，键为分组名，值为用户选择时看到的展示名称',
               )}
-              field={'UserUsableGroups'}
-              autosize={{ minRows: 6, maxRows: 12 }}
-              trigger='blur'
-              stopValidateWithError
-              rules={[
-                {
-                  validator: (rule, value) => verifyJSON(value),
-                  message: t('不是合法的 JSON 字符串'),
-                },
-              ]}
-              onChange={(value) =>
-                setInputs({ ...inputs, UserUsableGroups: value })
-              }
+              value={inputs.UserUsableGroups}
+              onChange={(v) => setInputs({ ...inputs, UserUsableGroups: v })}
             />
           </Col>
         </Row>
@@ -212,39 +200,13 @@ export default function GroupRatioSettings(props) {
         </Row>
         <Row gutter={16}>
           <Col xs={24} sm={16}>
-            <Form.TextArea
+            <ArrayEditor
               label={t('自动分组auto，从第一个开始选择')}
-              placeholder={t('为一个 JSON 文本')}
-              field={'AutoGroups'}
-              autosize={{ minRows: 6, maxRows: 12 }}
-              trigger='blur'
-              stopValidateWithError
-              rules={[
-                {
-                  validator: (rule, value) => {
-                    if (!value || value.trim() === '') {
-                      return true; // Allow empty values
-                    }
-
-                    // First check if it's valid JSON
-                    try {
-                      const parsed = JSON.parse(value);
-
-                      // Check if it's an array
-                      if (!Array.isArray(parsed)) {
-                        return false;
-                      }
-
-                      // Check if every element is a string
-                      return parsed.every((item) => typeof item === 'string');
-                    } catch (error) {
-                      return false;
-                    }
-                  },
-                  message: t('必须是有效的 JSON 字符串数组，例如：["g1","g2"]'),
-                },
-              ]}
-              onChange={(value) => setInputs({ ...inputs, AutoGroups: value })}
+              columnLabel={t('分组名（按优先级顺序）')}
+              placeholder={t('例如：vg1')}
+              itemWidth={220}
+              value={inputs.AutoGroups}
+              onChange={(v) => setInputs({ ...inputs, AutoGroups: v })}
             />
           </Col>
         </Row>

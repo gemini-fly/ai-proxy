@@ -211,6 +211,14 @@ func Register(c *gin.Context) {
 			return
 		}
 	}
+	// 强密码校验
+	if err := common.ValidatePasswordStrength(user.Password); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
 	exist, err := model.CheckUserExistOrDeleted(user.Username, user.Email)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
@@ -763,6 +771,16 @@ func UpdateSelf(c *gin.Context) {
 		user.Password = "" // rollback to what it should be
 		cleanUser.Password = ""
 	}
+	// 修改密码时校验强度
+	if user.Password != "" {
+		if err := common.ValidatePasswordStrength(user.Password); err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": err.Error(),
+			})
+			return
+		}
+	}
 	updatePassword, err := checkUpdatePassword(user.OriginalPassword, user.Password, cleanUser.Id)
 	if err != nil {
 		common.ApiError(c, err)
@@ -894,7 +912,11 @@ func CreateUser(c *gin.Context) {
 		Username:    user.Username,
 		Password:    user.Password,
 		DisplayName: user.DisplayName,
-		Role:        user.Role, // 保持管理员设置的角色
+		Role:        user.Role,
+		Group:       user.Group,
+	}
+	if cleanUser.Group == "" {
+		cleanUser.Group = "default"
 	}
 	if err := cleanUser.Insert(0); err != nil {
 		common.ApiError(c, err)
