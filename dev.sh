@@ -63,23 +63,40 @@ if [ ! -d "$WEB_DIR/node_modules" ]; then
 fi
 
 # ────────────────────────────────────────────
+# 工具函数：检测并释放端口
+# ────────────────────────────────────────────
+kill_port() {
+  local port="$1"
+  local pids
+  pids=$(lsof -iTCP:"$port" -sTCP:LISTEN -t 2>/dev/null)
+  if [ -n "$pids" ]; then
+    warn "端口 $port 已被占用 (PID: $pids)，正在 kill -9..."
+    echo "$pids" | xargs kill -9 2>/dev/null || true
+    sleep 1
+    success "端口 $port 已释放"
+  fi
+}
+
+# ────────────────────────────────────────────
 # 4. 启动后端
 # ────────────────────────────────────────────
+BACKEND_PORT=${PORT:-3000}
+kill_port "$BACKEND_PORT"
+
 info "启动后端 (go run main.go)..."
 cd "$ROOT_DIR"
 go run main.go > "$BACKEND_LOG" 2>&1 &
 BACKEND_PID=$!
 info "后端日志：$BACKEND_LOG  (PID $BACKEND_PID)"
 
-# 等待后端就绪（最多 15 秒）
-BACKEND_PORT=${PORT:-3000}
-for i in $(seq 1 15); do
+# 等待后端就绪（最多 20 秒）
+for i in $(seq 1 20); do
   if lsof -iTCP:"$BACKEND_PORT" -sTCP:LISTEN -t >/dev/null 2>&1; then
     success "后端已就绪，监听端口 $BACKEND_PORT"
     break
   fi
-  if [ "$i" -eq 15 ]; then
-    error "后端 15 秒内未能启动，请查看日志：$BACKEND_LOG"
+  if [ "$i" -eq 20 ]; then
+    error "后端 20 秒内未能启动，请查看日志：$BACKEND_LOG"
     tail -20 "$BACKEND_LOG"
     cleanup
   fi
@@ -89,14 +106,16 @@ done
 # ────────────────────────────────────────────
 # 5. 启动前端
 # ────────────────────────────────────────────
+FRONTEND_PORT=5566
+kill_port "$FRONTEND_PORT"
+
 info "启动前端 (bun dev)..."
 cd "$WEB_DIR"
 bun dev > "$FRONTEND_LOG" 2>&1 &
 FRONTEND_PID=$!
 info "前端日志：$FRONTEND_LOG  (PID $FRONTEND_PID)"
 
-# 等待前端 Vite 就绪
-FRONTEND_PORT=5566
+# 等待前端 Vite 就绪（最多 20 秒）
 for i in $(seq 1 20); do
   if lsof -iTCP:"$FRONTEND_PORT" -sTCP:LISTEN -t >/dev/null 2>&1; then
     success "前端已就绪，访问 http://localhost:$FRONTEND_PORT"
