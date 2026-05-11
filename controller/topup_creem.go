@@ -238,6 +238,10 @@ type CreemWebhookData struct {
 }
 
 func CreemWebhook(c *gin.Context) {
+	// 安全告警：测试模式将跳过签名验证，严禁用于生产环境
+	if setting.CreemTestMode {
+		common.SysLog("⚠️ SECURITY WARNING: Creem webhook 处于测试模式，签名验证已禁用！请勿在生产环境中使用 CREEM_TEST_MODE=true")
+	}
 	// 读取body内容用于打印，同时保留原始数据供后续使用
 	bodyBytes, err := io.ReadAll(c.Request.Body)
 	if err != nil {

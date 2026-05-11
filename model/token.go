@@ -1,9 +1,11 @@
 package model
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/bytedance/gopkg/util/gopool"
@@ -13,7 +15,8 @@ import (
 type Token struct {
 	Id                 int            `json:"id"`
 	UserId             int            `json:"user_id" gorm:"index"`
-	Key                string         `json:"key" gorm:"type:char(48);uniqueIndex"`
+	Key                string         `json:"key" gorm:"type:varchar(64);uniqueIndex"` // HMAC-SHA256 hash of the actual key
+	KeyHint            string         `json:"key_hint" gorm:"type:varchar(20)"`        // safe display hint, e.g. AbCdEf***XyZaBc
 	Status             int            `json:"status" gorm:"default:1"`
 	Name               string         `json:"name" gorm:"index" `
 	CreatedTime        int64          `json:"created_time" gorm:"bigint"`
@@ -30,8 +33,61 @@ type Token struct {
 	DeletedAt          gorm.DeletedAt `gorm:"index"`
 }
 
+// BuildKeyHint 根据明文密钥生成展示用摘要（不可逆）
+func BuildKeyHint(plaintext string) string {
+	if len(plaintext) < 8 {
+		return strings.Repeat("*", len(plaintext))
+	}
+	return plaintext[:4] + "***" + plaintext[len(plaintext)-4:]
+}
+
 func (token *Token) Clean() {
 	token.Key = ""
+}
+
+// MaskKey 用于 API 响应时，将 Key（哈希）替换为可展示的 KeyHint
+func (token *Token) MaskKey() {
+	token.Key = token.KeyHint
+}
+
+// --- Token 验证失败频率控制 ---
+
+const (
+	tokenAuthFailLimit  = 30 // 每分钟最多失败次数（同一 IP）
+	tokenAuthFailWindow = 60 // 统计窗口（秒）
+)
+
+// RecordTokenAuthFailure 记录一次 Token 验证失败，返回是否应封禁此 IP
+func RecordTokenAuthFailure(ip string) bool {
+	if !common.RedisEnabled || common.RDB == nil {
+		return false
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	key := fmt.Sprintf("token_auth_fail:%s", ip)
+	count, err := common.RDB.Incr(ctx, key).Result()
+	if err != nil {
+		return false
+	}
+	if count == 1 {
+		common.RDB.Expire(ctx, key, tokenAuthFailWindow*time.Second)
+	}
+	return count > tokenAuthFailLimit
+}
+
+// IsTokenAuthBlocked 检查此 IP 是否因频繁失败被封禁
+func IsTokenAuthBlocked(ip string) bool {
+	if !common.RedisEnabled || common.RDB == nil {
+		return false
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	key := fmt.Sprintf("token_auth_fail:%s", ip)
+	count, err := common.RDB.Get(ctx, key).Int64()
+	if err != nil {
+		return false
+	}
+	return count > tokenAuthFailLimit
 }
 
 func (token *Token) GetIpLimits() []string {
@@ -64,10 +120,8 @@ func GetAllUserTokens(userId int, startIdx int, num int) ([]*Token, error) {
 }
 
 func SearchUserTokens(userId int, keyword string, token string) (tokens []*Token, err error) {
-	if token != "" {
-		token = strings.Trim(token, "sk-")
-	}
-	err = DB.Where("user_id = ?", userId).Where("name LIKE ?", "%"+keyword+"%").Where(commonKeyCol+" LIKE ?", "%"+token+"%").Find(&tokens).Error
+	// Token key 已哈希存储，无法按部分密钥搜索，仅支持按名称搜索
+	err = DB.Where("user_id = ?", userId).Where("name LIKE ?", "%"+keyword+"%").Find(&tokens).Error
 	return tokens, err
 }
 
@@ -148,6 +202,8 @@ func GetTokenById(id int) (*Token, error) {
 }
 
 func GetTokenByKey(key string, fromDB bool) (token *Token, err error) {
+	// 将明文密钥转换为 HMAC 哈希进行查找
+	keyHash := common.GenerateHMAC(key)
 	defer func() {
 		// Update Redis cache asynchronously on successful DB read
 		if shouldUpdateRedis(fromDB, err) && token != nil {
@@ -159,15 +215,15 @@ func GetTokenByKey(key string, fromDB bool) (token *Token, err error) {
 		}
 	}()
 	if !fromDB && common.RedisEnabled {
-		// Try Redis first
-		token, err := cacheGetTokenByKey(key)
+		// Try Redis first (pass the hash directly)
+		token, err := cacheGetTokenByKey(keyHash)
 		if err == nil {
 			return token, nil
 		}
 		// Don't return error - fall through to DB
 	}
 	fromDB = true
-	err = DB.Where(commonKeyCol+" = ?", key).First(&token).Error
+	err = DB.Where(commonKeyCol+" = ?", keyHash).First(&token).Error
 	return token, err
 }
 

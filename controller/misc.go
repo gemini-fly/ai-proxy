@@ -1,10 +1,12 @@
 package controller
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/constant"
@@ -35,6 +37,48 @@ func TestStatus(c *gin.Context) {
 		"http_stats": httpStats,
 	})
 	return
+}
+
+// HealthCheck 用于负载均衡器健康探测，检查数据库和 Redis 连接状态
+func HealthCheck(c *gin.Context) {
+	status := http.StatusOK
+	result := gin.H{
+		"status":    "healthy",
+		"version":   common.Version,
+		"node_type": "master",
+	}
+
+	if !common.IsMasterNode {
+		result["node_type"] = "slave"
+	}
+
+	// 检查数据库
+	dbErr := model.PingDB()
+	if dbErr != nil {
+		status = http.StatusServiceUnavailable
+		result["status"] = "unhealthy"
+		result["database"] = "down"
+	} else {
+		result["database"] = "up"
+	}
+
+	// 检查 Redis
+	if common.RedisEnabled && common.RDB != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		_, redisErr := common.RDB.Ping(ctx).Result()
+		if redisErr != nil {
+			status = http.StatusServiceUnavailable
+			result["status"] = "unhealthy"
+			result["redis"] = "down"
+		} else {
+			result["redis"] = "up"
+		}
+	} else {
+		result["redis"] = "disabled"
+	}
+
+	c.JSON(status, result)
 }
 
 func GetStatus(c *gin.Context) {

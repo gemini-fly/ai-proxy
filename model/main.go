@@ -8,6 +8,9 @@ import (
 	"sync"
 	"time"
 
+	crand "crypto/rand"
+	"encoding/base64"
+
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/constant"
 
@@ -67,13 +70,23 @@ var LOG_DB *gorm.DB
 
 func createRootAccountIfNeed() error {
 	var user User
-	//if user.Status != common.UserStatusEnabled {
 	if err := DB.First(&user).Error; err != nil {
-		common.SysLog("no user exists, create a root user for you: username is root, password is 123456")
-		hashedPassword, err := common.Password2Hash("123456")
+		// 生成安全的随机密码：base64(随机12字节) + 固定后缀确保密码强度要求
+		randBytes := make([]byte, 12)
+		if _, err := crand.Read(randBytes); err != nil {
+			return fmt.Errorf("failed to generate random password: %v", err)
+		}
+		randomPassword := base64.StdEncoding.EncodeToString(randBytes) + "Aa1!"
+		hashedPassword, err := common.Password2Hash(randomPassword)
 		if err != nil {
 			return err
 		}
+		common.SysLog("================================================================")
+		common.SysLog("⚠️  SECURITY: 首次启动，已自动创建超级管理员账号")
+		common.SysLog("用户名: root")
+		common.SysLog("密   码: " + randomPassword)
+		common.SysLog("⚠️  请登录后立即修改密码！该密码仅展示一次，不再重复打印")
+		common.SysLog("================================================================")
 		rootUser := User{
 			Username:    "root",
 			Password:    hashedPassword,

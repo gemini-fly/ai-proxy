@@ -272,15 +272,15 @@ func Register(c *gin.Context) {
 			common.SysLog("failed to generate token key: " + err.Error())
 			return
 		}
-		// 生成默认令牌
+		// 生成默认令牌，有效期 90 天，防止泸露后永久被滥用
 		token := model.Token{
-			UserId:             insertedUser.Id, // 使用插入后的用户ID
+			UserId:             insertedUser.Id,
 			Name:               cleanUser.Username + "的初始令牌",
 			Key:                key,
 			CreatedTime:        common.GetTimestamp(),
 			AccessedTime:       common.GetTimestamp(),
-			ExpiredTime:        -1,     // 永不过期
-			RemainQuota:        500000, // 示例额度
+			ExpiredTime:        common.GetTimestamp() + 90*24*3600, // 90 天后过期
+			RemainQuota:        500000,
 			UnlimitedQuota:     true,
 			ModelLimitsEnabled: false,
 		}
@@ -394,10 +394,11 @@ func GenerateAccessToken(c *gin.Context) {
 		return
 	}
 
+	// 返回明文 key，存入数据库的是哈希
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "",
-		"data":    user.AccessToken,
+		"message": "请立即保存您的 Access Token，关闭后将无法再次查看",
+		"data":    key,
 	})
 	return
 }
@@ -840,11 +841,18 @@ func DeleteUser(c *gin.Context) {
 	err = model.HardDeleteUserById(id)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"message": "",
+			"success": false,
+			"message": err.Error(),
 		})
 		return
 	}
+	// 审计日志：记录管理员删除用户操作
+	model.RecordLog(c.GetInt("id"), model.LogTypeManage,
+		fmt.Sprintf("删除用户 [id=%d, username=%s]", originUser.Id, originUser.Username))
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+	})
 }
 
 func DeleteSelf(c *gin.Context) {
@@ -1032,6 +1040,9 @@ func ManageUser(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	// 审计日志：记录管理员用户管理操作
+	model.RecordLog(c.GetInt("id"), model.LogTypeManage,
+		fmt.Sprintf("用户管理操作 [action=%s, target_id=%d, target=%s]", req.Action, user.Id, user.Username))
 	clearUser := model.User{
 		Role:   user.Role,
 		Status: user.Status,

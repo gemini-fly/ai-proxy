@@ -235,6 +235,11 @@ func TokenAuth() func(c *gin.Context) {
 			parts = strings.Split(key, "-")
 			key = parts[0]
 		}
+		// 限流检查：如果此 IP 已因频繁失败被封禁，直接拒绝
+		if model.IsTokenAuthBlocked(c.ClientIP()) {
+			abortWithOpenAiMessage(c, http.StatusTooManyRequests, "验证失败次数过多，请稍候再试")
+			return
+		}
 		token, err := model.ValidateUserToken(key)
 		if token != nil {
 			id := c.GetInt("id")
@@ -243,6 +248,8 @@ func TokenAuth() func(c *gin.Context) {
 			}
 		}
 		if err != nil {
+			// 记录失败次数，防止密钥爆破
+			model.RecordTokenAuthFailure(c.ClientIP())
 			abortWithOpenAiMessage(c, http.StatusUnauthorized, err.Error())
 			return
 		}

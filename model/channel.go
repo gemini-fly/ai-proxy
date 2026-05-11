@@ -78,6 +78,47 @@ func (c *ChannelInfo) Scan(value interface{}) error {
 	return common.Unmarshal(bytesValue, c)
 }
 
+// BeforeCreate GORM Hook：创建前自动加密密钥
+func (channel *Channel) BeforeCreate(tx *gorm.DB) error {
+	return channel.encryptKey()
+}
+
+// BeforeSave GORM Hook：保存前自动加密密钥
+func (channel *Channel) BeforeSave(tx *gorm.DB) error {
+	return channel.encryptKey()
+}
+
+// AfterFind GORM Hook：查询后自动解密密钥
+func (channel *Channel) AfterFind(tx *gorm.DB) error {
+	return channel.decryptKey()
+}
+
+func (channel *Channel) encryptKey() error {
+	if channel.Key == "" {
+		return nil
+	}
+	encrypted, err := common.EncryptAES(channel.Key)
+	if err != nil {
+		return fmt.Errorf("encrypt channel key failed: %w", err)
+	}
+	channel.Key = encrypted
+	return nil
+}
+
+func (channel *Channel) decryptKey() error {
+	if channel.Key == "" {
+		return nil
+	}
+	decrypted, err := common.DecryptAES(channel.Key)
+	if err != nil {
+		// 解密失败（可能是旧数据明文），记录日志但不阻止查询
+		common.SysError(fmt.Sprintf("Failed to decrypt channel key (id=%d): %v", channel.Id, err))
+		return nil
+	}
+	channel.Key = decrypted
+	return nil
+}
+
 func (channel *Channel) GetKeys() []string {
 	if channel.Key == "" {
 		return []string{}
@@ -456,6 +497,11 @@ func (channel *Channel) Insert() error {
 }
 
 func (channel *Channel) Update() error {
+	// 自动加密密钥（Updates 不会触发 BeforeSave，需手动处理）
+	if err := channel.encryptKey(); err != nil {
+		return err
+	}
+
 	// If this is a multi-key channel, recalculate MultiKeySize based on the current key list to avoid inconsistency after editing keys
 	if channel.ChannelInfo.IsMultiKey {
 		var keyStr string

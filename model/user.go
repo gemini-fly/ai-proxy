@@ -32,7 +32,7 @@ type User struct {
 	WeChatId         string         `json:"wechat_id" gorm:"column:wechat_id;index"`
 	TelegramId       string         `json:"telegram_id" gorm:"column:telegram_id;index"`
 	VerificationCode string         `json:"verification_code" gorm:"-:all"`                                    // this field is only for Email verification, don't save it to database!
-	AccessToken      *string        `json:"access_token" gorm:"type:char(32);column:access_token;uniqueIndex"` // this token is for system management
+	AccessToken      *string        `json:"access_token" gorm:"type:varchar(64);column:access_token;uniqueIndex"` // HMAC-SHA256 hash of the actual access token
 	Quota            int            `json:"quota" gorm:"type:int;default:0"`
 	UsedQuota        int            `json:"used_quota" gorm:"type:int;default:0;column:used_quota"` // used quota
 	RequestCount     int            `json:"request_count" gorm:"type:int;default:0;"`               // request number
@@ -69,8 +69,14 @@ func (user *User) GetAccessToken() string {
 	return *user.AccessToken
 }
 
+// SetAccessToken 存储 access token 的 HMAC-SHA256 哈希（不存储明文）
 func (user *User) SetAccessToken(token string) {
-	user.AccessToken = &token
+	if token == "" {
+		user.AccessToken = nil
+		return
+	}
+	hash := common.GenerateHMAC(token)
+	user.AccessToken = &hash
 }
 
 func (user *User) GetSetting() dto.UserSetting {
@@ -659,8 +665,10 @@ func ValidateAccessToken(token string) (user *User) {
 		return nil
 	}
 	token = strings.Replace(token, "Bearer ", "", 1)
+	// 对提交的 token 进行 HMAC 哈希，匹配数据库中存储的哈希值
+	tokenHash := common.GenerateHMAC(token)
 	user = &User{}
-	if DB.Where("access_token = ?", token).First(user).RowsAffected == 1 {
+	if DB.Where("access_token = ?", tokenHash).First(user).RowsAffected == 1 {
 		return user
 	}
 	return nil

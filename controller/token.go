@@ -20,6 +20,10 @@ func GetAllTokens(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	// 展示安全提示，不暴露哈希
+	for _, t := range tokens {
+		t.MaskKey()
+	}
 	total, _ := model.CountUserTokens(userId)
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(tokens)
@@ -56,6 +60,7 @@ func GetToken(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	token.MaskKey() // 返回操示而非哈希
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -177,10 +182,14 @@ func AddToken(c *gin.Context) {
 		common.SysLog("failed to generate token key: " + err.Error())
 		return
 	}
+	// 安全存储：只存储 HMAC 哈希，不存冷文
+	keyHash := common.GenerateHMAC(key)
+	keyHint := model.BuildKeyHint(key)
 	cleanToken := model.Token{
 		UserId:             c.GetInt("id"),
 		Name:               token.Name,
-		Key:                key,
+		Key:                keyHash,
+		KeyHint:            keyHint,
 		CreatedTime:        common.GetTimestamp(),
 		AccessedTime:       common.GetTimestamp(),
 		ExpiredTime:        token.ExpiredTime,
@@ -197,9 +206,11 @@ func AddToken(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	// 返回明文密钥一次，用户必须自行保存，关闭后无法再次查看
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "",
+		"message": "令牌创建成功！请立即复制并保存您的密钥，关闭后将无法再次查看",
+		"data":    "sk-" + key,
 	})
 	return
 }
