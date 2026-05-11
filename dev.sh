@@ -68,7 +68,7 @@ fi
 kill_port() {
   local port="$1"
   local pids
-  pids=$(lsof -iTCP:"$port" -sTCP:LISTEN -t 2>/dev/null)
+  pids=$(lsof -iTCP:"$port" -sTCP:LISTEN -t 2>/dev/null) || true  # lsof 未找到时返回非零，需要 || true 防止 set -e 退出
   if [ -n "$pids" ]; then
     warn "端口 $port 已被占用 (PID: $pids)，正在 kill -9..."
     echo "$pids" | xargs kill -9 2>/dev/null || true
@@ -89,14 +89,14 @@ go run main.go > "$BACKEND_LOG" 2>&1 &
 BACKEND_PID=$!
 info "后端日志：$BACKEND_LOG  (PID $BACKEND_PID)"
 
-# 等待后端就绪（最多 20 秒）
-for i in $(seq 1 20); do
+# 等待后端就绪（最多 60 秒，go run 需要编译时间）
+for i in $(seq 1 60); do
   if lsof -iTCP:"$BACKEND_PORT" -sTCP:LISTEN -t >/dev/null 2>&1; then
     success "后端已就绪，监听端口 $BACKEND_PORT"
     break
   fi
-  if [ "$i" -eq 20 ]; then
-    error "后端 20 秒内未能启动，请查看日志：$BACKEND_LOG"
+  if [ "$i" -eq 60 ]; then
+    error "后端 60 秒内未能启动，请查看日志：$BACKEND_LOG"
     tail -20 "$BACKEND_LOG"
     cleanup
   fi

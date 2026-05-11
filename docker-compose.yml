@@ -21,7 +21,7 @@ services:
     restart: always
     environment:
       POSTGRES_USER: root
-      POSTGRES_PASSWORD: 123456
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD 必须在 .env 文件中设置}
       POSTGRES_DB: new-api
     ports:
       - "5432:5432"  # 暴露给本地后端访问

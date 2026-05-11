@@ -1,0 +1,116 @@
+# New-API 纯应用层部署配置
+# 不含数据库，连接外部独立数据库服务器
+#
+# 使用说明：
+#   1. 在应用服务器上：cp .env.app.example .env 并修改配置
+#   2. 确保 .env 中 SQL_DSN 和 REDIS_CONN_STRING 指向数据库服务器 IP
+#   3. docker compose -f docker-compose.app.yml up -d
+#
+# 网络要求：
+#   - 应用服务器必须能访问数据库服务器的 5432、6379、26379 端口
+#   - 建议通过内网/VPC/专线连接，避免公网暴露数据库
+
+version: '3.8'
+
+services:
+  # ==========================================
+  # 应用层：New-API Master（运行定时任务）
+  # ==========================================
+  new-api-master:
+    image: ${DOCKER_REGISTRY:-ghcr.io/quantumnous}/new-api:${NEW_API_VERSION:-latest}
+    container_name: new-api-master
+    restart: always
+    environment:
+      NODE_TYPE: master
+      SESSION_SECRET: ${SESSION_SECRET}
+      CRYPTO_SECRET: ${CRYPTO_SECRET}
+      SQL_DSN: ${SQL_DSN}
+      LOG_SQL_DSN: ${LOG_SQL_DSN}
+      REDIS_CONN_STRING: ${REDIS_CONN_STRING}
+      SYNC_FREQUENCY: ${SYNC_FREQUENCY:-60}
+      STREAMING_TIMEOUT: ${STREAMING_TIMEOUT:-300}
+      SHUTDOWN_TIMEOUT: ${SHUTDOWN_TIMEOUT:-5m}
+      CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS}
+      # 连接池优化（连接外部数据库时适当调大）
+      SQL_MAX_OPEN_CONNS: ${SQL_MAX_OPEN_CONNS:-500}
+      SQL_MAX_IDLE_CONNS: ${SQL_MAX_IDLE_CONNS:-100}
+      SQL_MAX_LIFETIME: ${SQL_MAX_LIFETIME:-3600}
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - new-api-app
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+
+  # ==========================================
+  # 应用层：New-API Worker（只处理请求）
+  # ==========================================
+  # 如需更多 Worker，复制此 service 块并修改容器名和端口
+  new-api-worker:
+    image: ${DOCKER_REGISTRY:-ghcr.io/quantumnous}/new-api:${NEW_API_VERSION:-latest}
+    container_name: new-api-worker
+    restart: always
+    environment:
+      NODE_TYPE: slave
+      SESSION_SECRET: ${SESSION_SECRET}
+      CRYPTO_SECRET: ${CRYPTO_SECRET}
+      SQL_DSN: ${SQL_DSN}
+      LOG_SQL_DSN: ${LOG_SQL_DSN}
+      REDIS_CONN_STRING: ${REDIS_CONN_STRING}
+      SYNC_FREQUENCY: ${SYNC_FREQUENCY:-60}
+      STREAMING_TIMEOUT: ${STREAMING_TIMEOUT:-300}
+      SHUTDOWN_TIMEOUT: ${SHUTDOWN_TIMEOUT:-5m}
+      CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS}
+      SQL_MAX_OPEN_CONNS: ${SQL_MAX_OPEN_CONNS:-500}
+      SQL_MAX_IDLE_CONNS: ${SQL_MAX_IDLE_CONNS:-100}
+      SQL_MAX_LIFETIME: ${SQL_MAX_LIFETIME:-3600}
+    ports:
+      - "3001:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      - new-api-master
+    networks:
+      - new-api-app
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+
+  # ==========================================
+  # 负载均衡层：Nginx
+  # ==========================================
+  nginx:
+    image: nginx:alpine
+    container_name: new-api-nginx
+    restart: always
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # 如需 HTTPS，挂载 SSL 证书
+      # - ./ssl:/etc/nginx/ssl:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - new-api-master
+      - new-api-worker
+    networks:
+      - new-api-app
+
+networks:
+  new-api-app:
+    driver: bridge

@@ -1,0 +1,144 @@
+# New-API 独立数据库层部署配置
+# 部署在独立的数据库服务器上，仅暴露必要端口
+#
+# 使用说明：
+#   1. 在数据库服务器上：cp .env.db.example .env 并修改配置
+#   2. docker compose -f docker-compose.db.yml up -d
+#   3. 配置防火墙，仅允许应用服务器 IP 访问 5432、6379、26379 端口
+#
+# 安全要求：
+#   - 必须配置防火墙（ufw/iptables/云安全组）
+#   - PostgreSQL 和 Redis 必须设置强密码
+#   - 不建议将数据库服务器直接暴露到公网
+
+version: '3.8'
+
+services:
+  # ==========================================
+  # PostgreSQL 主库
+  # ==========================================
+  postgres:
+    image: postgres:15
+    container_name: new-api-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-root}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD 必须在 .env 中设置}
+      POSTGRES_DB: ${POSTGRES_DB:-new-api}
+      PGDATA: /var/lib/postgresql/data/pgdata
+      # 性能优化参数
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+    command: >
+      postgres
+      -c max_connections=200
+      -c shared_buffers=512MB
+      -c effective_cache_size=1536MB
+      -c maintenance_work_mem=128MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=2621kB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+      -c max_worker_processes=4
+      -c max_parallel_workers_per_gather=2
+      -c max_parallel_workers=4
+      -c max_parallel_maintenance_workers=2
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./backups:/backups  # 备份目录挂载
+    ports:
+      # 仅绑定到内网网卡（如有），默认绑定 0.0.0.0 配合防火墙使用
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-root} -d ${POSTGRES_DB:-new-api}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - new-api-db
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # ==========================================
+  # Redis Master
+  # ==========================================
+  redis:
+    image: redis:7-alpine
+    container_name: new-api-redis
+    restart: always
+    command: >
+      sh -c "echo 'bind 0.0.0.0' > /usr/local/etc/redis/redis.conf
+      && echo 'requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD 必须在 .env 中设置}' >> /usr/local/etc/redis/redis.conf
+      && echo 'maxmemory 512mb' >> /usr/local/etc/redis/redis.conf
+      && echo 'maxmemory-policy allkeys-lru' >> /usr/local/etc/redis/redis.conf
+      && echo 'appendonly yes' >> /usr/local/etc/redis/redis.conf
+      && echo 'appendfsync everysec' >> /usr/local/etc/redis/redis.conf
+      && echo 'save 900 1' >> /usr/local/etc/redis/redis.conf
+      && echo 'save 300 10' >> /usr/local/etc/redis/redis.conf
+      && echo 'save 60 10000' >> /usr/local/etc/redis/redis.conf
+      && redis-server /usr/local/etc/redis/redis.conf"
+    volumes:
+      - redis_data:/data
+      - ./redis-backups:/backups
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:?}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - new-api-db
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # ==========================================
+  # Redis Sentinel（建议部署 3 个，此处为单节点演示）
+  # 生产环境建议在同一台服务器或另外 2 台服务器各部署 1 个 Sentinel
+  # ==========================================
+  redis-sentinel:
+    image: redis:7-alpine
+    container_name: new-api-redis-sentinel
+    restart: always
+    command: >
+      sh -c "echo 'sentinel monitor mymaster redis 6379 1' > /etc/redis-sentinel.conf
+      && echo 'sentinel down-after-milliseconds mymaster 5000' >> /etc/redis-sentinel.conf
+      && echo 'sentinel failover-timeout mymaster 60000' >> /etc/redis-sentinel.conf
+      && echo 'sentinel parallel-syncs mymaster 1' >> /etc/redis-sentinel.conf
+      && echo 'requirepass ${REDIS_PASSWORD}' >> /etc/redis-sentinel.conf
+      && echo 'sentinel auth-pass mymaster ${REDIS_PASSWORD}' >> /etc/redis-sentinel.conf
+      && redis-sentinel /etc/redis-sentinel.conf"
+    ports:
+      - "26379:26379"
+    depends_on:
+      - redis
+    networks:
+      - new-api-db
+
+volumes:
+  pg_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  new-api-db:
+    driver: bridge

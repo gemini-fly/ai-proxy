@@ -1,0 +1,181 @@
+# New-API 高可用部署配置（自有服务器环境）
+# 架构：1 Master + N Worker + PostgreSQL + Redis Sentinel
+#
+# 使用说明：
+#   1. 复制 .env.ha.example 为 .env 并填写所有环境变量
+#   2. docker compose -f docker-compose.ha.yml up -d
+#   3. 如需扩展 Worker：修改 docker-compose.ha.yml 中 worker 副本数或新增 worker 节点
+#
+# 注意：此配置适用于单服务器多容器部署。
+#       如需跨服务器高可用，请将 PostgreSQL 和 Redis 部署在独立的数据层服务器上。
+
+version: '3.8'
+
+services:
+  # ==========================================
+  # 应用层：New-API Master（运行定时任务）
+  # ==========================================
+  new-api-master:
+    image: ${DOCKER_REGISTRY:-ghcr.io/quantumnous}/new-api:${NEW_API_VERSION:-latest}
+    container_name: new-api-master
+    restart: always
+    environment:
+      NODE_TYPE: master
+      SESSION_SECRET: ${SESSION_SECRET}
+      CRYPTO_SECRET: ${CRYPTO_SECRET}
+      SQL_DSN: ${SQL_DSN}
+      LOG_SQL_DSN: ${LOG_SQL_DSN}
+      REDIS_CONN_STRING: ${REDIS_CONN_STRING}
+      SYNC_FREQUENCY: ${SYNC_FREQUENCY:-60}
+      STREAMING_TIMEOUT: ${STREAMING_TIMEOUT:-300}
+      SHUTDOWN_TIMEOUT: ${SHUTDOWN_TIMEOUT:-5m}
+      CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS}
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - new-api-ha
+
+  # ==========================================
+  # 应用层：New-API Worker（只处理请求）
+  # ==========================================
+  new-api-worker:
+    image: ${DOCKER_REGISTRY:-ghcr.io/quantumnous}/new-api:${NEW_API_VERSION:-latest}
+    container_name: new-api-worker
+    restart: always
+    environment:
+      NODE_TYPE: slave
+      SESSION_SECRET: ${SESSION_SECRET}
+      CRYPTO_SECRET: ${CRYPTO_SECRET}
+      SQL_DSN: ${SQL_DSN}
+      LOG_SQL_DSN: ${LOG_SQL_DSN}
+      REDIS_CONN_STRING: ${REDIS_CONN_STRING}
+      SYNC_FREQUENCY: ${SYNC_FREQUENCY:-60}
+      STREAMING_TIMEOUT: ${STREAMING_TIMEOUT:-300}
+      SHUTDOWN_TIMEOUT: ${SHUTDOWN_TIMEOUT:-5m}
+      CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS}
+    ports:
+      - "3001:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      new-api-master:
+        condition: service_started
+    networks:
+      - new-api-ha
+
+  # ==========================================
+  # 数据层：PostgreSQL（单实例，建议配合外部主从）
+  # ==========================================
+  postgres:
+    image: postgres:15
+    container_name: new-api-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-root}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD 必须在 .env 中设置}
+      POSTGRES_DB: ${POSTGRES_DB:-new-api}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-root} -d ${POSTGRES_DB:-new-api}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - new-api-ha
+
+  # ==========================================
+  # 缓存层：Redis Master
+  # ==========================================
+  redis:
+    image: redis:7-alpine
+    container_name: new-api-redis
+    restart: always
+    command: >
+      sh -c "echo 'requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD 必须在 .env 中设置}' > /usr/local/etc/redis/redis.conf
+      && echo 'maxmemory 256mb' >> /usr/local/etc/redis/redis.conf
+      && echo 'maxmemory-policy allkeys-lru' >> /usr/local/etc/redis/redis.conf
+      && redis-server /usr/local/etc/redis/redis.conf"
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - new-api-ha
+
+  # ==========================================
+  # 缓存层：Redis Sentinel（用于故障检测，可选）
+  # ==========================================
+  redis-sentinel:
+    image: redis:7-alpine
+    container_name: new-api-redis-sentinel
+    restart: always
+    command: >
+      sh -c "echo 'sentinel monitor mymaster redis 6379 1' > /etc/redis-sentinel.conf
+      && echo 'sentinel down-after-milliseconds mymaster 5000' >> /etc/redis-sentinel.conf
+      && echo 'sentinel failover-timeout mymaster 60000' >> /etc/redis-sentinel.conf
+      && echo 'requirepass ${REDIS_PASSWORD}' >> /etc/redis-sentinel.conf
+      && echo 'sentinel auth-pass mymaster ${REDIS_PASSWORD}' >> /etc/redis-sentinel.conf
+      && redis-sentinel /etc/redis-sentinel.conf"
+    ports:
+      - "26379:26379"
+    depends_on:
+      - redis
+    networks:
+      - new-api-ha
+
+  # ==========================================
+  # 负载均衡层：Nginx（单服务器模式）
+  # 如需跨服务器，请在宿主机安装 Nginx 而非容器内
+  # ==========================================
+  nginx:
+    image: nginx:alpine
+    container_name: new-api-nginx
+    restart: always
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - new-api-master
+      - new-api-worker
+    networks:
+      - new-api-ha
+
+volumes:
+  pg_data:
+  redis_data:
+
+networks:
+  new-api-ha:
+    driver: bridge
