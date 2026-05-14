@@ -18,11 +18,6 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import { API, showError } from '../helpers';
-import {
-  prepareCredentialRequestOptions,
-  buildAssertionResult,
-  isPasskeySupported,
-} from '../helpers/passkey';
 
 /**
  * 通用安全验证服务
@@ -35,45 +30,16 @@ export class SecureVerificationService {
    */
   static async checkAvailableVerificationMethods() {
     try {
-      const [twoFAResponse, passkeyResponse, passkeySupported] =
-        await Promise.all([
-          API.get('/api/user/2fa/status'),
-          API.get('/api/user/passkey'),
-          isPasskeySupported(),
-        ]);
-
-      // console.log('=== DEBUGGING VERIFICATION METHODS ===');
-      // console.log('2FA Response:', JSON.stringify(twoFAResponse, null, 2));
-      // console.log(
-      //   'Passkey Response:',
-      //   JSON.stringify(passkeyResponse, null, 2),
-      // );
+      const twoFAResponse = await API.get('/api/user/2fa/status');
 
       const has2FA =
         twoFAResponse.data?.success &&
         twoFAResponse.data?.data?.enabled === true;
-      const hasPasskey =
-        passkeyResponse.data?.success &&
-        passkeyResponse.data?.data?.enabled === true;
-
-      console.log('has2FA calculation:', {
-        success: twoFAResponse.data?.success,
-        dataExists: !!twoFAResponse.data?.data,
-        enabled: twoFAResponse.data?.data?.enabled,
-        result: has2FA,
-      });
-
-      console.log('hasPasskey calculation:', {
-        success: passkeyResponse.data?.success,
-        dataExists: !!passkeyResponse.data?.data,
-        enabled: passkeyResponse.data?.data?.enabled,
-        result: hasPasskey,
-      });
 
       const result = {
         has2FA,
-        hasPasskey,
-        passkeySupported,
+        hasPasskey: false,
+        passkeySupported: false,
       };
 
       return result;
@@ -110,74 +76,10 @@ export class SecureVerificationService {
     // 验证成功，session 已在后端设置
   }
 
-  /**
-   * 执行Passkey验证
-   * @returns {Promise<void>}
-   */
-  static async verifyPasskey() {
-    try {
-      // 开始Passkey验证
-      const beginResponse = await API.post('/api/user/passkey/verify/begin');
-      if (!beginResponse.data?.success) {
-        throw new Error(beginResponse.data?.message || '开始验证失败');
-      }
-
-      // 准备WebAuthn选项
-      const publicKey = prepareCredentialRequestOptions(
-        beginResponse.data.data.options,
-      );
-
-      // 执行WebAuthn验证
-      const credential = await navigator.credentials.get({ publicKey });
-      if (!credential) {
-        throw new Error('Passkey 验证被取消');
-      }
-
-      // 构建验证结果
-      const assertionResult = buildAssertionResult(credential);
-
-      // 完成验证
-      const finishResponse = await API.post(
-        '/api/user/passkey/verify/finish',
-        assertionResult,
-      );
-      if (!finishResponse.data?.success) {
-        throw new Error(finishResponse.data?.message || '验证失败');
-      }
-
-      // 调用通用验证 API 设置 session（Passkey 验证已完成）
-      const verifyResponse = await API.post('/api/verify', {
-        method: 'passkey',
-      });
-
-      if (!verifyResponse.data?.success) {
-        throw new Error(verifyResponse.data?.message || '验证失败');
-      }
-
-      // 验证成功，session 已在后端设置
-    } catch (error) {
-      if (error.name === 'NotAllowedError') {
-        throw new Error('Passkey 验证被取消或超时');
-      } else if (error.name === 'InvalidStateError') {
-        throw new Error('Passkey 验证状态无效');
-      } else {
-        throw error;
-      }
-    }
-  }
-
-  /**
-   * 通用验证方法，根据验证类型执行相应的验证流程
-   * @param {string} method - 验证方式: '2fa' | 'passkey'
-   * @param {string} code - 2FA验证码（当method为'2fa'时必需）
-   * @returns {Promise<void>}
-   */
   static async verify(method, code = '') {
     switch (method) {
       case '2fa':
         return await this.verify2FA(code);
-      case 'passkey':
-        return await this.verifyPasskey();
       default:
         throw new Error(`不支持的验证方式: ${method}`);
     }

@@ -23,11 +23,7 @@ import {
   API,
   copy,
   showError,
-  showInfo,
   showSuccess,
-  prepareCredentialCreationOptions,
-  buildRegistrationResult,
-  isPasskeySupported,
   setUserData,
 } from '../../helpers';
 import { UserContext } from '../../context/User';
@@ -64,10 +60,6 @@ const SecuritySetting = () => {
   const [turnstileToken, setTurnstileToken] = useState('');
 
   const [systemToken, setSystemToken] = useState('');
-  const [passkeyStatus, setPasskeyStatus] = useState({ enabled: false });
-  const [passkeyRegisterLoading, setPasskeyRegisterLoading] = useState(false);
-  const [passkeyDeleteLoading, setPasskeyDeleteLoading] = useState(false);
-  const [passkeySupported, setPasskeySupported] = useState(false);
 
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [showAccountDeleteModal, setShowAccountDeleteModal] = useState(false);
@@ -99,33 +91,10 @@ const SecuritySetting = () => {
       }
     })();
 
-    loadPasskeyStatus();
-    isPasskeySupported()
-      .then(setPasskeySupported)
-      .catch(() => setPasskeySupported(false));
   }, []);
 
   const handleInputChange = (name, value) => {
     setInputs((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const loadPasskeyStatus = async () => {
-    try {
-      const res = await API.get('/api/user/passkey');
-      const { success, data, message } = res.data;
-      if (success) {
-        setPasskeyStatus({
-          enabled: data?.enabled || false,
-          last_used_at: data?.last_used_at || null,
-          backup_eligible: data?.backup_eligible || false,
-          backup_state: data?.backup_state || false,
-        });
-      } else {
-        showError(message);
-      }
-    } catch (error) {
-      // ignore
-    }
   };
 
   const generateAccessToken = async () => {
@@ -189,72 +158,6 @@ const SecuritySetting = () => {
       showError(message);
     }
   };
-
-  const handleRegisterPasskey = async () => {
-    if (!passkeySupported || !window.PublicKeyCredential) {
-      showInfo(t('当前设备不支持 Passkey'));
-      return;
-    }
-    setPasskeyRegisterLoading(true);
-    try {
-      const beginRes = await API.post('/api/user/passkey/register/begin');
-      const { success, message, data } = beginRes.data;
-      if (!success) {
-        showError(message || t('无法发起 Passkey 注册'));
-        return;
-      }
-      const publicKey = prepareCredentialCreationOptions(
-        data?.options || data?.publicKey || data,
-      );
-      const credential = await navigator.credentials.create({ publicKey });
-      const payload = buildRegistrationResult(credential);
-      if (!payload) {
-        showError(t('Passkey 注册失败，请重试'));
-        return;
-      }
-      const finishRes = await API.post(
-        '/api/user/passkey/register/finish',
-        payload,
-      );
-      if (finishRes.data.success) {
-        showSuccess(t('Passkey 注册成功'));
-        await loadPasskeyStatus();
-      } else {
-        showError(finishRes.data.message || t('Passkey 注册失败，请重试'));
-      }
-    } catch (error) {
-      if (error?.name === 'AbortError') {
-        showInfo(t('已取消 Passkey 注册'));
-      } else {
-        showError(t('Passkey 注册失败，请重试'));
-      }
-    } finally {
-      setPasskeyRegisterLoading(false);
-    }
-  };
-
-  const handleRemovePasskey = async () => {
-    setPasskeyDeleteLoading(true);
-    try {
-      const res = await API.delete('/api/user/passkey');
-      const { success, message } = res.data;
-      if (success) {
-        showSuccess(t('Passkey 已解绑'));
-        await loadPasskeyStatus();
-      } else {
-        showError(message || t('操作失败，请重试'));
-      }
-    } catch (error) {
-      showError(t('操作失败，请重试'));
-    } finally {
-      setPasskeyDeleteLoading(false);
-    }
-  };
-
-  const passkeyEnabled = passkeyStatus?.enabled;
-  const lastUsedLabel = passkeyStatus?.last_used_at
-    ? new Date(passkeyStatus.last_used_at).toLocaleString()
-    : t('尚未使用');
 
   return (
     <div className='mt-[60px]'>
@@ -339,63 +242,6 @@ const SecuritySetting = () => {
                   icon={<IconLock />}
                 >
                   {t('修改密码')}
-                </Button>
-              </div>
-            </Card>
-
-            {/* Passkey 设置 */}
-            <Card className='!rounded-xl w-full'>
-              <div className='flex flex-col sm:flex-row items-start sm:justify-between gap-4'>
-                <div className='flex items-start w-full sm:w-auto'>
-                  <div className='w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mr-4 flex-shrink-0'>
-                    <IconKey size='large' className='text-slate-600' />
-                  </div>
-                  <div>
-                    <Typography.Title heading={6} className='mb-1'>
-                      {t('Passkey 登录')}
-                    </Typography.Title>
-                    <Typography.Text type='tertiary' className='text-sm'>
-                      {passkeyEnabled
-                        ? t('已启用 Passkey，无需密码即可登录')
-                        : t('使用 Passkey 实现免密且更安全的登录体验')}
-                    </Typography.Text>
-                    <div className='mt-2 text-xs text-gray-500 space-y-1'>
-                      <div>
-                        {t('最后使用时间')}：{lastUsedLabel}
-                      </div>
-                      {!passkeySupported && (
-                        <div className='text-amber-600'>
-                          {t('当前设备不支持 Passkey')}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <Button
-                  type={passkeyEnabled ? 'danger' : 'primary'}
-                  theme='solid'
-                  onClick={
-                    passkeyEnabled
-                      ? () => {
-                          Modal.confirm({
-                            title: t('确认解绑 Passkey'),
-                            content: t(
-                              '解绑后将无法使用 Passkey 登录，确定要继续吗？',
-                            ),
-                            okText: t('确认解绑'),
-                            cancelText: t('取消'),
-                            okType: 'danger',
-                            onOk: handleRemovePasskey,
-                          });
-                        }
-                      : handleRegisterPasskey
-                  }
-                  className={`w-full sm:w-auto ${passkeyEnabled ? '!bg-slate-500 hover:!bg-slate-600' : ''}`}
-                  icon={<IconKey />}
-                  disabled={!passkeySupported && !passkeyEnabled}
-                  loading={passkeyEnabled ? passkeyDeleteLoading : passkeyRegisterLoading}
-                >
-                  {passkeyEnabled ? t('解绑 Passkey') : t('注册 Passkey')}
                 </Button>
               </div>
             </Card>

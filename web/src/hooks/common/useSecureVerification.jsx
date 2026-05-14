@@ -89,8 +89,8 @@ export const useSecureVerification = ({
       // 检查验证方式
       const methods = await checkVerificationMethods();
 
-      if (!methods.has2FA && !methods.hasPasskey) {
-        const errorMessage = t('您需要先启用两步验证或 Passkey 才能执行此操作');
+      if (!methods.has2FA) {
+        const errorMessage = t('您需要先启用两步验证才能执行此操作');
         showError(errorMessage);
         onError?.(new Error(errorMessage));
         return false;
@@ -99,9 +99,7 @@ export const useSecureVerification = ({
       // 设置默认验证方式
       let defaultMethod = preferredMethod;
       if (!defaultMethod) {
-        if (methods.hasPasskey && methods.passkeySupported) {
-          defaultMethod = 'passkey';
-        } else if (methods.has2FA) {
+        if (methods.has2FA) {
           defaultMethod = '2fa';
         }
       }
@@ -262,11 +260,10 @@ export const useSecureVerification = ({
     // 辅助方法
     canUseMethod,
     getRecommendedMethod,
-    withVerification, // 新增：自动处理验证的包装函数
+    withVerification,
 
     // 便捷属性
-    hasAnyVerificationMethod:
-      verificationMethods.has2FA || verificationMethods.hasPasskey,
+    hasAnyVerificationMethod: verificationMethods.has2FA,
     isLoading: verificationState.loading,
     currentMethod: verificationState.method,
     code: verificationState.code,

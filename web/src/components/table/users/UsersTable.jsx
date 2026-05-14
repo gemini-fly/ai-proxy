@@ -29,7 +29,6 @@ import PromoteUserModal from './modals/PromoteUserModal';
 import DemoteUserModal from './modals/DemoteUserModal';
 import EnableDisableUserModal from './modals/EnableDisableUserModal';
 import DeleteUserModal from './modals/DeleteUserModal';
-import ResetPasskeyModal from './modals/ResetPasskeyModal';
 import ResetTwoFAModal from './modals/ResetTwoFAModal';
 
 const UsersTable = (usersData) => {
@@ -47,7 +46,6 @@ const UsersTable = (usersData) => {
     setShowEditUser,
     manageUser,
     refresh,
-    resetUserPasskey,
     resetUserTwoFA,
     t,
   } = usersData;
@@ -59,7 +57,6 @@ const UsersTable = (usersData) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [modalUser, setModalUser] = useState(null);
   const [enableDisableAction, setEnableDisableAction] = useState('');
-  const [showResetPasskeyModal, setShowResetPasskeyModal] = useState(false);
   const [showResetTwoFAModal, setShowResetTwoFAModal] = useState(false);
 
   // Modal handlers
@@ -84,11 +81,6 @@ const UsersTable = (usersData) => {
     setShowDeleteModal(true);
   };
 
-  const showResetPasskeyUserModal = (user) => {
-    setModalUser(user);
-    setShowResetPasskeyModal(true);
-  };
-
   const showResetTwoFAUserModal = (user) => {
     setModalUser(user);
     setShowResetTwoFAModal(true);
@@ -110,11 +102,6 @@ const UsersTable = (usersData) => {
     setShowEnableDisableModal(false);
   };
 
-  const handleResetPasskeyConfirm = async () => {
-    await resetUserPasskey(modalUser);
-    setShowResetPasskeyModal(false);
-  };
-
   const handleResetTwoFAConfirm = async () => {
     await resetUserTwoFA(modalUser);
     setShowResetTwoFAModal(false);
@@ -130,7 +117,6 @@ const UsersTable = (usersData) => {
       showDemoteModal: showDemoteUserModal,
       showEnableDisableModal: showEnableDisableUserModal,
       showDeleteModal: showDeleteUserModal,
-      showResetPasskeyModal: showResetPasskeyUserModal,
       showResetTwoFAModal: showResetTwoFAUserModal,
     });
   }, [
@@ -141,7 +127,6 @@ const UsersTable = (usersData) => {
     showDemoteUserModal,
     showEnableDisableUserModal,
     showDeleteUserModal,
-    showResetPasskeyUserModal,
     showResetTwoFAUserModal,
   ]);
 
@@ -224,14 +209,6 @@ const UsersTable = (usersData) => {
         activePage={activePage}
         refresh={refresh}
         manageUser={manageUser}
-        t={t}
-      />
-
-      <ResetPasskeyModal
-        visible={showResetPasskeyModal}
-        onCancel={() => setShowResetPasskeyModal(false)}
-        onConfirm={handleResetPasskeyConfirm}
-        user={modalUser}
         t={t}
       />
 
