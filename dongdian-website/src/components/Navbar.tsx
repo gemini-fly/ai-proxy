@@ -5,8 +5,8 @@ export default function Navbar() {
     <nav className={styles.nav}>
       <div className={`container ${styles.inner}`}>
         <div className={styles.logo}>
-          <span className={styles.logoIcon}>◈</span>
-          <span className="gradient-text">懂点科技</span>
+          <img className={styles.logoIcon} src="/assets/brand/shanyu-logo-final.png" alt="" />
+          <span className="gradient-text">闪域科技</span>
         </div>
         <ul className={styles.links}>
           <li><a href="#services">服务</a></li>

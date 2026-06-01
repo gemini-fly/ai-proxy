@@ -73,9 +73,15 @@
 }
 
 .cardIcon {
-  font-size: 36px;
+  width: 46px;
+  height: 46px;
   margin-bottom: 20px;
   display: block;
+  object-fit: contain;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(99, 102, 241, 0.22);
+  padding: 6px;
 }
 
 .cardTitle {

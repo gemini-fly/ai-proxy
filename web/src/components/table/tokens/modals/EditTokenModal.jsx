@@ -22,6 +22,7 @@ import {
   API,
   showError,
   showSuccess,
+  copy,
   timestamp2string,
   renderGroupOption,
   renderQuotaWithPrompt,
@@ -41,6 +42,7 @@ import {
   Form,
   Col,
   Row,
+  Modal,
 } from '@douyinfe/semi-ui';
 import {
   IconCreditCard,
@@ -205,6 +207,52 @@ const EditTokenModal = (props) => {
     return result;
   };
 
+  const showCreatedKeysModal = (createdKeys) => {
+    if (createdKeys.length === 0) return;
+    const content = createdKeys.join('\n');
+
+    Modal.info({
+      title: t('令牌创建成功'),
+      icon: null,
+      content: (
+        <div className='space-y-3'>
+          <Text type='warning'>
+            {t('请立即复制并保存密钥。关闭此窗口后，完整密钥将无法再次查看。')}
+          </Text>
+          <textarea
+            readOnly
+            value={content}
+            className='w-full h-28 p-2 font-mono text-xs border rounded-lg resize-none bg-gray-50'
+            onFocus={(e) => e.target.select()}
+          />
+        </div>
+      ),
+      footer: (
+        <Space>
+          <Button
+            theme='solid'
+            type='primary'
+            onClick={async () => {
+              if (await copy(content)) {
+                showSuccess(t('已复制到剪贴板！'));
+                Modal.destroyAll();
+              } else {
+                showError(t('无法复制到剪贴板，请手动复制后关闭窗口'));
+              }
+            }}
+          >
+            {t('复制并关闭')}
+          </Button>
+          <Button type='tertiary' onClick={() => Modal.destroyAll()}>
+            {t('关闭')}
+          </Button>
+        </Space>
+      ),
+      maskClosable: false,
+      size: 'large',
+    });
+  };
+
   const submit = async (values) => {
     setLoading(true);
     if (isEdit) {
@@ -236,6 +284,7 @@ const EditTokenModal = (props) => {
     } else {
       const count = parseInt(values.tokenCount, 10) || 1;
       let successCount = 0;
+      const createdKeys = [];
       for (let i = 0; i < count; i++) {
         let { tokenCount: _tc, ...localInputs } = values;
         const baseName =
@@ -259,18 +308,21 @@ const EditTokenModal = (props) => {
         localInputs.model_limits = localInputs.model_limits.join(',');
         localInputs.model_limits_enabled = localInputs.model_limits.length > 0;
         let res = await API.post(`/api/token/`, localInputs);
-        const { success, message } = res.data;
+        const { success, message, data } = res.data;
         if (success) {
           successCount++;
+          if (data) {
+            createdKeys.push(data);
+          }
         } else {
           showError(t(message));
           break;
         }
       }
       if (successCount > 0) {
-        showSuccess(t('令牌创建成功，请在列表页面点击复制获取令牌！'));
         props.refresh();
         props.handleClose();
+        showCreatedKeysModal(createdKeys);
       }
     }
     setLoading(false);

@@ -48,7 +48,7 @@ export function isRoot() {
 
 export function getSystemName() {
   let system_name = localStorage.getItem('system_name');
-  if (!system_name) return '懂点Code';
+  if (!system_name) return '闪域';
   return system_name;
 }
 

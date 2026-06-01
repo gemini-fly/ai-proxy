@@ -1,3 +1,22 @@
+/*
+Copyright (C) 2025 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+
 import React, { useContext, useEffect, useState } from 'react';
 import { Button, Input, ScrollList, ScrollItem } from '@douyinfe/semi-ui';
 import { API, showError, copy, showSuccess } from '../../helpers';
@@ -10,11 +29,7 @@ import { useTranslation } from 'react-i18next';
 import { IconCopy } from '@douyinfe/semi-icons';
 import { Link } from 'react-router-dom';
 import NoticeModal from '../../components/layout/NoticeModal';
-import {
-  Moonshot, OpenAI, XAI, Zhipu, Volcengine, Cohere, Claude, Gemini,
-  Suno, Minimax, Wenxin, Spark, Qingyan, DeepSeek, Qwen, Midjourney,
-  Grok, AzureAI, Hunyuan, Xinference,
-} from '@lobehub/icons';
+import { siteContent } from '@siteContent';
 
 /* ── Design tokens ─────────────────────────────────────────── */
 const DARK_C = {
@@ -44,52 +59,24 @@ const LIGHT_C = {
   termShadow: '0 8px 40px rgba(0,0,0,0.12)',
 };
 
+const BRAND_LOGO = '/logo.png';
+const ASSETS = {
+  suite: '/shanview-assets/ops-ldap-suite.svg',
+  platform: '/shanview-assets/ops-platform.svg',
+  directory: '/shanview-assets/ldap-directory.svg',
+};
+
 /* ── Static data ───────────────────────────────────────────── */
 const FEATURES = [
-  { icon: '🌐', color: '#06d6a0', title: '国内外全覆盖',
-    desc: '30+ 主流大模型一站接入，OpenAI、Claude、Gemini 到文心、星火、通义千问，统统搞定。' },
-  { icon: '⚡', color: '#ffd166', title: '统一 OpenAI 接口',
-    desc: '无需改代码，更换 Base URL 即可切换任意模型，完全兼容 OpenAI SDK 及所有工具链。' },
-  { icon: '👥', color: '#a78bfa', title: '企业团队管理',
+  { icon: ASSETS.suite, color: '#06d6a0', ...siteContent.home.coverageFeature },
+  { icon: ASSETS.platform, color: '#ffd166', ...siteContent.home.apiFeature },
+  { icon: ASSETS.directory, color: '#a78bfa', title: '企业团队管理',
     desc: '按员工分配独立 API Key，设置用量限额，实时查看每个成员的消费与调用明细。' },
-  { icon: '💰', color: '#fb923c', title: '透明按量计费',
+  { icon: BRAND_LOGO, color: '#fb923c', title: '透明按量计费',
     desc: '无月费无套餐，实时额度统计，充值即用。个人开发者与企业团队均可灵活使用。' },
 ];
 
-const INTL = [
-  { icon: <OpenAI size={26} />,          name: 'OpenAI' },
-  { icon: <Claude.Color size={26} />,    name: 'Claude' },
-  { icon: <Gemini.Color size={26} />,    name: 'Gemini' },
-  { icon: <Grok size={26} />,            name: 'Grok' },
-  { icon: <AzureAI.Color size={26} />,   name: 'Azure AI' },
-  { icon: <DeepSeek.Color size={26} />,  name: 'DeepSeek' },
-  { icon: <Cohere.Color size={26} />,    name: 'Cohere' },
-  { icon: <Midjourney size={26} />,      name: 'Midjourney' },
-  { icon: <Suno size={26} />,            name: 'Suno' },
-  { icon: <XAI size={26} />,             name: 'xAI' },
-];
-
-const CN = [
-  { icon: <Qwen.Color size={26} />,       name: '通义千问' },
-  { icon: <Wenxin.Color size={26} />,     name: '文心一言' },
-  { icon: <Spark.Color size={26} />,      name: '讯飞星火' },
-  { icon: <Zhipu.Color size={26} />,      name: '智谱 GLM' },
-  { icon: <Hunyuan.Color size={26} />,    name: '腾讯混元' },
-  { icon: <Volcengine.Color size={26} />, name: '字节豆包' },
-  { icon: <Minimax.Color size={26} />,    name: 'MiniMax' },
-  { icon: <Moonshot size={26} />,         name: 'Moonshot' },
-  { icon: <Qingyan.Color size={26} />,    name: '清言' },
-  { icon: <Xinference.Color size={26} />, name: 'Xinference' },
-];
-
-const TERMINAL = [
-  { p: '$', t: 'curl https://api.ddcode.ai/v1/chat/completions \\',  c: '#8b949e' },
-  { p: ' ', t: '  -H "Authorization: Bearer sk-dd••••••••ua" \\',   c: '#79c0ff' },
-  { p: ' ', t: "  -d '{\"model\":\"gpt-4o\",\"messages\":[...]}'",   c: '#8b949e' },
-  { p: '>', t: 'HTTP/2 200  ✓',                                      c: '#06d6a0' },
-  { p: ' ', t: '"content": "当然，让我来帮你解答..."',               c: '#ffd166' },
-  { p: '>', t: 'tokens: 1,243  cost: $0.0037  latency: 1.2s',        c: '#3d444d' },
-];
+const TERMINAL = siteContent.home.terminal;
 
 /* ── Sub-components ─────────────────────────────────────────── */
 const ModelChip = ({ icon, name, C: colors }) => (
@@ -103,6 +90,17 @@ const ModelChip = ({ icon, name, C: colors }) => (
     {icon}
     <span style={{ fontSize: 13, color: colors?.text1 ?? '#8b949e', fontWeight: 500 }}>{name}</span>
   </div>
+);
+
+const FeatureIcon = ({ src, color }) => (
+  <span style={{
+    width: 46, height: 46, display: 'inline-flex', alignItems: 'center',
+    justifyContent: 'center', borderRadius: 12, marginBottom: 14,
+    background: 'rgba(255,255,255,0.94)', border: `1px solid ${color}33`,
+    boxShadow: `0 10px 24px ${color}1f`,
+  }}>
+    <img src={src} alt='' style={{ width: 34, height: 34, objectFit: 'contain' }} />
+  </span>
 );
 
 /* ── Main component ─────────────────────────────────────────── */
@@ -224,15 +222,14 @@ const Home = () => {
                 }}>
                   <span style={{ width: 7, height: 7, borderRadius: '50%', background: C.primary }} />
                   <span style={{ fontSize: 13, color: C.primary, fontWeight: 600 }}>
-                    30+ AI 模型 · 随时可用
+                    {siteContent.home.badge}
                   </span>
                 </div>
 
                 {/* headline */}
                 <h1 style={{ fontSize: isMobile ? 48 : 68, fontWeight: 800,
                   lineHeight: 1.08, marginBottom: 20, letterSpacing: '-0.025em' }}>
-                  <span style={{ fontFamily: 'ui-monospace,monospace', color: C.primary }}>懂点</span>
-                  <span style={{ fontFamily: 'ui-monospace,monospace' }}>Code</span>
+                  <span style={{ fontFamily: 'ui-monospace,monospace', color: C.primary }}>闪域</span>
                   <br />
                   <span style={{ fontSize: isMobile ? 22 : 32, fontWeight: 400, color: C.text1, letterSpacing: 0 }}>
                     AI API 代理平台
@@ -241,8 +238,7 @@ const Home = () => {
 
                 <p style={{ fontSize: isMobile ? 15 : 17, color: C.text1, lineHeight: 1.75,
                   marginBottom: 36, maxWidth: 460 }}>
-                  一个 Key 接入国内外 30+ 主流大模型。无缝兼容 OpenAI SDK，
-                  企业可按员工分配用量，实时监控消费，开箱即用。
+                  {siteContent.home.heroDescription}
                 </p>
 
                 {/* URL input */}
@@ -313,7 +309,7 @@ const Home = () => {
                     ))}
                     <span style={{ marginLeft: 10, fontSize: 12, color: C.text2,
                       fontFamily: 'ui-monospace,monospace' }}>
-                      dongdiancode ~ api-gateway
+                      shanview ~ api-gateway
                     </span>
                   </div>
 
@@ -330,7 +326,7 @@ const Home = () => {
                     {/* cursor */}
                     <div style={{ display: 'flex', gap: 14, marginTop: 4 }}>
                       <span style={{ color: C.text2 }}>$</span>
-                      <span className='ddcode-cursor' style={{
+                      <span className='shanview-cursor' style={{
                         display: 'inline-block', width: 8, height: 16,
                         background: C.primary, verticalAlign: 'middle',
                       }} />
@@ -368,7 +364,7 @@ const Home = () => {
             <div style={{ textAlign: 'center', marginBottom: isMobile ? 40 : 64 }}>
               <div style={{ fontSize: 12, color: C.primary, fontWeight: 700,
                 letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 14 }}>
-                为什么选择懂点Code
+                为什么选择闪域
               </div>
               <h2 style={{ fontSize: isMobile ? 28 : 42, fontWeight: 800,
                 marginBottom: 14, letterSpacing: '-0.02em' }}>
@@ -382,11 +378,11 @@ const Home = () => {
             <div style={{ display: 'grid',
               gridTemplateColumns: isMobile ? '1fr' : 'repeat(2,1fr)', gap: 18 }}>
               {FEATURES.map((f) => (
-                <div key={f.title} className='ddcode-feature-card' style={{
+                <div key={f.title} className='shanview-feature-card' style={{
                   padding: '28px 30px', background: C.surface,
                   border: `1px solid ${C.border}`, borderRadius: 16,
                 }}>
-                  <div style={{ fontSize: 34, marginBottom: 14 }}>{f.icon}</div>
+                  <FeatureIcon src={f.icon} color={f.color} />
                   <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 10, color: f.color }}>
                     {f.title}
                   </h3>
@@ -403,23 +399,25 @@ const Home = () => {
             borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}` }}>
             <div style={{ textAlign: 'center', marginBottom: 32, padding: '0 20px' }}>
               <span style={{ fontSize: 13, color: C.text1, fontWeight: 500 }}>
-                国内外主流大模型，全部覆盖
+                {siteContent.home.modelSectionLabel}
               </span>
             </div>
 
-            {/* row 1 → left */}
-            <div style={{ overflow: 'hidden', marginBottom: 14 }}>
-              <div className='ddcode-marquee-left' style={{ display: 'flex', width: 'max-content' }}>
-                {[...INTL, ...INTL].map((m, i) => <ModelChip key={i} icon={m.icon} name={m.name} C={C} />)}
+            {siteContent.home.modelRows.map((row, rowIndex) => (
+              <div key={rowIndex} style={{
+                overflow: 'hidden',
+                marginBottom: rowIndex === siteContent.home.modelRows.length - 1 ? 0 : 14,
+              }}>
+                <div
+                  className={rowIndex % 2 === 0 ? 'shanview-marquee-left' : 'shanview-marquee-right'}
+                  style={{ display: 'flex', width: 'max-content' }}
+                >
+                  {[...row, ...row].map((m, i) => (
+                    <ModelChip key={`${rowIndex}-${i}`} icon={m.icon} name={m.name} C={C} />
+                  ))}
+                </div>
               </div>
-            </div>
-
-            {/* row 2 → right */}
-            <div style={{ overflow: 'hidden' }}>
-              <div className='ddcode-marquee-right' style={{ display: 'flex', width: 'max-content' }}>
-                {[...CN, ...CN].map((m, i) => <ModelChip key={i} icon={m.icon} name={m.name} C={C} />)}
-              </div>
-            </div>
+            ))}
           </section>
 
           {/* ═══════════════ CTA ═══════════════ */}
@@ -435,7 +433,7 @@ const Home = () => {
             <div style={{ position: 'relative' }}>
               <h2 style={{ fontSize: isMobile ? 30 : 48, fontWeight: 800,
                 marginBottom: 16, letterSpacing: '-0.02em' }}>
-                开始使用<span style={{ color: C.primary, fontFamily: 'ui-monospace,monospace' }}>懂点Code</span>
+                开始使用<span style={{ color: C.primary, fontFamily: 'ui-monospace,monospace' }}>闪域</span>
               </h2>
               <p style={{ color: C.text1, fontSize: 16, maxWidth: 380,
                 margin: '0 auto 36px', lineHeight: 1.7 }}>

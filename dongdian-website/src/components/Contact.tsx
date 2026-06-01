@@ -36,41 +36,51 @@ export default function Contact() {
             <h3>随时联系我们</h3>
             <div className={styles.infoItems}>
               <div className={styles.infoItem}>
-                <div className={styles.infoItemIcon}>🌐</div>
+                <div className={styles.infoItemIcon}>
+                  <img src="/assets/ops-platform.svg" alt="" />
+                </div>
                 <div>
                   <div className={styles.infoItemTitle}>官方网站</div>
                   <div className={styles.infoItemVal}>
-                    <a href="https://www.DongdianNow.com" target="_blank" rel="noreferrer">
-                      www.DongdianNow.com
+                    <a href="https://www.shanview.cn" target="_blank" rel="noreferrer">
+                      www.shanview.cn
                     </a>
                   </div>
                 </div>
               </div>
               <div className={styles.infoItem}>
-                <div className={styles.infoItemIcon}>💬</div>
+                <div className={styles.infoItemIcon}>
+                  <img src="/assets/ldap-directory.svg" alt="" />
+                </div>
                 <div>
                   <div className={styles.infoItemTitle}>微信咨询</div>
                   <div className={styles.infoItemVal}>请通过官网表单留下联系方式，我们将主动添加您</div>
                 </div>
               </div>
               <div className={styles.infoItem}>
-                <div className={styles.infoItemIcon}>📧</div>
+                <div className={styles.infoItemIcon}>
+                  <img src="/assets/ops-ldap-suite.svg" alt="" />
+                </div>
                 <div>
                   <div className={styles.infoItemTitle}>商务邮箱</div>
                   <div className={styles.infoItemVal}>
-                    <a href="mailto:bd@dongdiannow.com">bd@dongdiannow.com</a>
+                    <a href="mailto:contactus@shanview.cn">contactus@shanview.cn</a>
                   </div>
                 </div>
               </div>
               <div className={styles.infoItem}>
-                <div className={styles.infoItemIcon}>🏢</div>
+                <div className={styles.infoItemIcon}>
+                  <img src="/assets/brand/shanyu-logo-final.png" alt="" />
+                </div>
                 <div>
                   <div className={styles.infoItemTitle}>公司全称</div>
-                  <div className={styles.infoItemVal}>北京懂点科技有限公司</div>
+                  <div className={styles.infoItemVal}>北京闪域科技有限公司</div>
                 </div>
               </div>
               <div className={styles.infoItem}>
-                <div className={styles.infoItemIcon}>⏰</div>
+                <div className={styles.infoItemIcon}>
+                  <img src="/assets/ops-platform.svg" alt="" />
+                </div>
                 <div>
                   <div className={styles.infoItemTitle}>响应时间</div>
                   <div className={styles.infoItemVal}>工作日 9:00–18:00，企业客户 7×24 响应</div>
@@ -83,7 +93,7 @@ export default function Contact() {
           <div className={styles.form}>
             {submitted ? (
               <div className={styles.successMsg}>
-                <span className={styles.successIcon}>✅</span>
+                <img className={styles.successIcon} src="/assets/brand/shanyu-logo-final.png" alt="" />
                 <h4>提交成功！</h4>
                 <p>感谢您的咨询，我们将在 1 个工作日内联系您。</p>
               </div>

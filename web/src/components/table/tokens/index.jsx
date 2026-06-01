@@ -46,16 +46,10 @@ import { useIsMobile } from '../../../hooks/common/useIsMobile';
 import { createCardProPagination } from '../../../helpers/utils';
 
 function TokensPage() {
-  // Define the function first, then pass it into the hook to avoid TDZ errors
-  const openFluentNotificationRef = useRef(null);
-  const tokensData = useTokensData((key) =>
-    openFluentNotificationRef.current?.(key),
-  );
+  const tokensData = useTokensData();
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState('list');
   const latestRef = useRef({
-    tokens: [],
-    selectedKeys: [],
     t: (k) => k,
     selectedModel: '',
     prefillKey: '',
@@ -68,19 +62,11 @@ function TokensPage() {
   // Keep latest data for handlers inside notifications
   useEffect(() => {
     latestRef.current = {
-      tokens: tokensData.tokens,
-      selectedKeys: tokensData.selectedKeys,
       t: tokensData.t,
       selectedModel,
       prefillKey,
     };
-  }, [
-    tokensData.tokens,
-    tokensData.selectedKeys,
-    tokensData.t,
-    selectedModel,
-    prefillKey,
-  ]);
+  }, [tokensData.t, selectedModel, prefillKey]);
 
   const loadModels = async () => {
     try {
@@ -138,28 +124,32 @@ function TokensPage() {
           <div style={{ marginBottom: 8 }}>
             {key
               ? t('请选择模型。')
-              : t('选择模型后可一键填充当前选中令牌（或本页第一个令牌）。')}
+              : t('完整密钥仅在创建成功后显示一次，请使用创建时复制的密钥配置 FluentRead。')}
           </div>
-          <div style={{ marginBottom: 8 }}>
-            <Select
-              placeholder={t('请选择模型')}
-              optionList={modelOptions}
-              onChange={setSelectedModel}
-              filter={selectFilter}
-              style={{ width: 320 }}
-              showClear
-              searchable
-              emptyContent={t('暂无数据')}
-            />
-          </div>
+          {key && (
+            <div style={{ marginBottom: 8 }}>
+              <Select
+                placeholder={t('请选择模型')}
+                optionList={modelOptions}
+                onChange={setSelectedModel}
+                filter={selectFilter}
+                style={{ width: 320 }}
+                showClear
+                searchable
+                emptyContent={t('暂无数据')}
+              />
+            </div>
+          )}
           <Space>
-            <Button
-              theme='solid'
-              type='primary'
-              onClick={handlePrefillToFluent}
-            >
-              {t('一键填充到 FluentRead')}
-            </Button>
+            {key && (
+              <Button
+                theme='solid'
+                type='primary'
+                onClick={handlePrefillToFluent}
+              >
+                {t('一键填充到 FluentRead')}
+              </Button>
+            )}
             {!key && (
               <Button
                 type='warning'
@@ -184,14 +174,9 @@ function TokensPage() {
       duration: 0,
     });
   }
-  // assign after definition so hook callback can call it safely
-  openFluentNotificationRef.current = openFluentNotification;
-
   // Prefill to Fluent handler
   const handlePrefillToFluent = () => {
     const {
-      tokens,
-      selectedKeys,
       t,
       selectedModel: chosenModel,
       prefillKey: overrideKey,
@@ -221,17 +206,10 @@ function TokensPage() {
     if (overrideKey) {
       apiKeyToUse = 'sk-' + overrideKey;
     } else {
-      const token =
-        selectedKeys && selectedKeys.length === 1
-          ? selectedKeys[0]
-          : tokens && tokens.length > 0
-            ? tokens[0]
-            : null;
-      if (!token) {
-        Toast.warning(t('没有可用令牌用于填充'));
-        return;
-      }
-      apiKeyToUse = 'sk-' + token.key;
+      Toast.warning(
+        t('完整密钥仅在创建成功后显示一次，请使用创建时复制的密钥配置 FluentRead。'),
+      );
+      return;
     }
 
     const payload = {
@@ -339,9 +317,7 @@ function TokensPage() {
     selectedKeys,
     setEditingToken,
     setShowEdit,
-    batchCopyTokens,
     batchDeleteTokens,
-    copyText,
 
     // Filters state
     formInitValues,
@@ -383,9 +359,7 @@ function TokensPage() {
                 selectedKeys={selectedKeys}
                 setEditingToken={setEditingToken}
                 setShowEdit={setShowEdit}
-                batchCopyTokens={batchCopyTokens}
                 batchDeleteTokens={batchDeleteTokens}
-                copyText={copyText}
                 t={t}
               />
 

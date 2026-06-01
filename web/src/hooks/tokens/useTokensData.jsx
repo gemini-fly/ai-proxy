@@ -19,18 +19,11 @@ For commercial licensing, please contact support@quantumnous.com
 
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal } from '@douyinfe/semi-ui';
-import {
-  API,
-  copy,
-  showError,
-  showSuccess,
-  encodeToBase64,
-} from '../../helpers';
+import { API, showError, showSuccess } from '../../helpers';
 import { ITEMS_PER_PAGE } from '../../constants';
 import { useTableCompactMode } from '../common/useTableCompactMode';
 
-export const useTokensData = (openFluentNotification) => {
+export const useTokensData = () => {
   const { t } = useTranslation();
 
   // Basic state
@@ -52,8 +45,6 @@ export const useTokensData = (openFluentNotification) => {
 
   // UI state
   const [compactMode, setCompactMode] = useTableCompactMode('tokens');
-  const [showKeys, setShowKeys] = useState({});
-
   // Form state
   const [formApi, setFormApi] = useState(null);
   const formInitValues = {
@@ -107,23 +98,17 @@ export const useTokensData = (openFluentNotification) => {
     setSelectedKeys([]);
   };
 
-  // Copy text function
-  const copyText = async (text) => {
-    if (await copy(text)) {
-      showSuccess(t('已复制到剪贴板！'));
-    } else {
-      Modal.error({
-        title: t('无法复制到剪贴板，请手动复制'),
-        content: text,
-        size: 'large',
-      });
-    }
-  };
-
   // Open link function for chat integrations
   const onOpenLink = async (type, url, record) => {
-    if (url && url.startsWith('fluent')) {
-      openFluentNotification(record.key);
+    const needsTokenKey =
+      url &&
+      (url.startsWith('fluent') ||
+        url.includes('{key}') ||
+        url.includes('{cherryConfig}'));
+    if (needsTokenKey) {
+      showError(
+        t('完整密钥仅在创建成功后显示一次，请使用创建时复制的密钥配置聊天工具。'),
+      );
       return;
     }
     let status = localStorage.getItem('status');
@@ -135,21 +120,8 @@ export const useTokensData = (openFluentNotification) => {
     if (serverAddress === '') {
       serverAddress = window.location.origin;
     }
-    if (url.includes('{cherryConfig}') === true) {
-      let cherryConfig = {
-        id: 'new-api',
-        baseUrl: serverAddress,
-        apiKey: 'sk-' + record.key,
-      };
-      let encodedConfig = encodeURIComponent(
-        encodeToBase64(JSON.stringify(cherryConfig)),
-      );
-      url = url.replaceAll('{cherryConfig}', encodedConfig);
-    } else {
-      let encodedServerAddress = encodeURIComponent(serverAddress);
-      url = url.replaceAll('{address}', encodedServerAddress);
-      url = url.replaceAll('{key}', 'sk-' + record.key);
-    }
+    let encodedServerAddress = encodeURIComponent(serverAddress);
+    url = url.replaceAll('{address}', encodedServerAddress);
 
     window.open(url, '_blank');
   };
@@ -285,51 +257,6 @@ export const useTokensData = (openFluentNotification) => {
     }
   };
 
-  // Batch copy tokens
-  const batchCopyTokens = (copyType) => {
-    if (selectedKeys.length === 0) {
-      showError(t('请至少选择一个令牌！'));
-      return;
-    }
-
-    Modal.info({
-      title: t('复制令牌'),
-      icon: null,
-      content: t('请选择你的复制方式'),
-      footer: (
-        <div className='flex gap-2'>
-          <button
-            className='px-3 py-1 bg-gray-200 rounded'
-            onClick={async () => {
-              let content = '';
-              for (let i = 0; i < selectedKeys.length; i++) {
-                content +=
-                  selectedKeys[i].name + '    sk-' + selectedKeys[i].key + '\n';
-              }
-              await copyText(content);
-              Modal.destroyAll();
-            }}
-          >
-            {t('名称+密钥')}
-          </button>
-          <button
-            className='px-3 py-1 bg-blue-500 text-white rounded'
-            onClick={async () => {
-              let content = '';
-              for (let i = 0; i < selectedKeys.length; i++) {
-                content += 'sk-' + selectedKeys[i].key + '\n';
-              }
-              await copyText(content);
-              Modal.destroyAll();
-            }}
-          >
-            {t('仅密钥')}
-          </button>
-        </div>
-      ),
-    });
-  };
-
   // Initialize data
   useEffect(() => {
     loadTokens(1)
@@ -362,9 +289,6 @@ export const useTokensData = (openFluentNotification) => {
     // UI state
     compactMode,
     setCompactMode,
-    showKeys,
-    setShowKeys,
-
     // Form state
     formApi,
     setFormApi,
@@ -374,7 +298,6 @@ export const useTokensData = (openFluentNotification) => {
     // Functions
     loadTokens,
     refresh,
-    copyText,
     onOpenLink,
     manageToken,
     searchTokens,
@@ -384,7 +307,6 @@ export const useTokensData = (openFluentNotification) => {
     rowSelection,
     handleRow,
     batchDeleteTokens,
-    batchCopyTokens,
     syncPageData,
 
     // Translation

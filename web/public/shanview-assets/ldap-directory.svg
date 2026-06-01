@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" role="img" aria-label="LDAP directory dashboard">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f2fbff"/>
+      <stop offset="1" stop-color="#eaf6ff"/>
+    </linearGradient>
+    <linearGradient id="node" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0570fc"/>
+      <stop offset="1" stop-color="#03cdfd"/>
+    </linearGradient>
+  </defs>
+  <rect width="960" height="600" fill="url(#bg)"/>
+  <rect x="82" y="72" width="796" height="456" rx="8" fill="#ffffff" stroke="#d8e6f3"/>
+  <rect x="120" y="118" width="210" height="364" rx="8" fill="#f3f8ff" stroke="#d8e6f3"/>
+  <rect x="388" y="118" width="450" height="364" rx="8" fill="#f8fbff" stroke="#d8e6f3"/>
+  <path d="M204 230 L204 390 M204 270 L280 270 M204 330 L280 330 M204 390 L280 390" fill="none" stroke="#8aa4bd" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="204" cy="230" r="28" fill="url(#node)"/>
+  <circle cx="280" cy="270" r="24" fill="#0570fc"/>
+  <circle cx="280" cy="330" r="24" fill="#039efc"/>
+  <circle cx="280" cy="390" r="24" fill="#03cdfd"/>
+  <rect x="426" y="158" width="164" height="18" rx="9" fill="#061b3d"/>
+  <rect x="426" y="220" width="354" height="18" rx="9" fill="#d8e6f3"/>
+  <rect x="426" y="270" width="310" height="18" rx="9" fill="#d8e6f3"/>
+  <rect x="426" y="320" width="360" height="18" rx="9" fill="#d8e6f3"/>
+  <rect x="426" y="382" width="128" height="34" rx="8" fill="#0570fc"/>
+  <rect x="574" y="382" width="128" height="34" rx="8" fill="#061b3d"/>
+  <g fill="#183652" font-family="Inter, Arial, sans-serif" font-weight="800">
+    <text x="156" y="462" font-size="18">Directory Tree</text>
+    <text x="426" y="462" font-size="18">Users / Groups / ACL</text>
+  </g>
+</svg>

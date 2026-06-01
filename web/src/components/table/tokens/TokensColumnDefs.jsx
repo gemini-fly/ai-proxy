@@ -42,9 +42,6 @@ import {
 } from '../../../helpers';
 import {
   IconTreeTriangleDown,
-  IconCopy,
-  IconEyeOpened,
-  IconEyeClosed,
 } from '@douyinfe/semi-icons';
 
 // progress color helper
@@ -107,47 +104,19 @@ const renderGroupColumn = (text, record, t) => {
   return renderGroup(text);
 };
 
-// Render token key column with show/hide and copy functionality
-const renderTokenKey = (text, record, showKeys, setShowKeys, copyText) => {
-  const fullKey = 'sk-' + record.key;
-  const maskedKey =
-    'sk-' + record.key.slice(0, 4) + '**********' + record.key.slice(-4);
-  const revealed = !!showKeys[record.id];
-
+// Render token key hint. Full keys are shown only once after creation.
+const renderTokenKey = (text, record, t) => {
+  const keyHint = record.key || record.key_hint || '';
+  const displayKey = keyHint ? `sk-${keyHint}` : 'sk-****';
   return (
-    <div className='w-[200px]'>
-      <Input
-        readOnly
-        value={revealed ? fullKey : maskedKey}
-        size='small'
-        suffix={
-          <div className='flex items-center'>
-            <Button
-              theme='borderless'
-              size='small'
-              type='tertiary'
-              icon={revealed ? <IconEyeClosed /> : <IconEyeOpened />}
-              aria-label='toggle token visibility'
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowKeys((prev) => ({ ...prev, [record.id]: !revealed }));
-              }}
-            />
-            <Button
-              theme='borderless'
-              size='small'
-              type='tertiary'
-              icon={<IconCopy />}
-              aria-label='copy token key'
-              onClick={async (e) => {
-                e.stopPropagation();
-                await copyText(fullKey);
-              }}
-            />
-          </div>
-        }
-      />
-    </div>
+    <Tooltip
+      content={t('完整密钥仅在创建成功后显示一次，请在创建时复制保存。')}
+      position='top'
+    >
+      <div className='w-[200px]'>
+        <Input readOnly value={displayKey} size='small' />
+      </div>
+    </Tooltip>
   );
 };
 
@@ -426,9 +395,6 @@ const renderOperations = (
 
 export const getTokensColumns = ({
   t,
-  showKeys,
-  setShowKeys,
-  copyText,
   manageToken,
   onOpenLink,
   setEditingToken,
@@ -460,8 +426,7 @@ export const getTokensColumns = ({
     {
       title: t('密钥'),
       key: 'token_key',
-      render: (text, record) =>
-        renderTokenKey(text, record, showKeys, setShowKeys, copyText),
+      render: (text, record) => renderTokenKey(text, record, t),
     },
     {
       title: t('可用模型'),

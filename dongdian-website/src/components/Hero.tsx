@@ -10,7 +10,7 @@ export default function Hero() {
       <div className={`container ${styles.content}`}>
         <div className={styles.badge}>
           <span className={styles.badgeDot} />
-          北京懂点科技有限公司
+          北京闪域科技有限公司
         </div>
 
         <h1 className={styles.title}>

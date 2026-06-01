@@ -38,9 +38,6 @@ const TokensTable = (tokensData) => {
     handlePageSizeChange,
     rowSelection,
     handleRow,
-    showKeys,
-    setShowKeys,
-    copyText,
     manageToken,
     onOpenLink,
     setEditingToken,
@@ -53,9 +50,6 @@ const TokensTable = (tokensData) => {
   const columns = useMemo(() => {
     return getTokensColumns({
       t,
-      showKeys,
-      setShowKeys,
-      copyText,
       manageToken,
       onOpenLink,
       setEditingToken,
@@ -64,9 +58,6 @@ const TokensTable = (tokensData) => {
     });
   }, [
     t,
-    showKeys,
-    setShowKeys,
-    copyText,
     manageToken,
     onOpenLink,
     setEditingToken,

@@ -23,12 +23,30 @@ import pkg from '@douyinfe/vite-plugin-semi';
 import path from 'path';
 import { codeInspectorPlugin } from 'code-inspector-plugin';
 const { vitePluginSemi } = pkg;
+const siteRegion = process.env.VITE_SITE_REGION === 'global' ? 'global' : 'cn';
+const siteMeta = {
+  cn: {
+    title: '闪域',
+    description:
+      '闪域 - 国内AI模型API代理平台，支持阿里通义、Qwen、豆包、火山方舟等主流模型，一站式管理分发',
+  },
+  global: {
+    title: '闪域',
+    description:
+      '闪域 - 国内外AI模型API代理平台，支持OpenAI、Claude、Gemini、阿里通义、Qwen、豆包、火山方舟等主流模型，一站式管理分发',
+  },
+};
+const siteContentPath = path.resolve(
+  __dirname,
+  `./src/config/siteContent.${siteRegion}.jsx`,
+);
 
 // https://vitejs.dev/config/
 export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@siteContent': siteContentPath,
     },
   },
   plugins: [
@@ -54,6 +72,14 @@ export default defineConfig({
     vitePluginSemi({
       cssLayer: true,
     }),
+    {
+      name: 'site-region-html-meta',
+      transformIndexHtml(html) {
+        return html
+          .replaceAll('%SITE_TITLE%', siteMeta[siteRegion].title)
+          .replaceAll('%SITE_DESCRIPTION%', siteMeta[siteRegion].description);
+      },
+    },
   ],
   optimizeDeps: {
     force: true,

@@ -40,6 +40,9 @@ func SearchTokens(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	for _, t := range tokens {
+		t.MaskKey()
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -303,10 +306,12 @@ func UpdateToken(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	responseToken := *cleanToken
+	responseToken.MaskKey()
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-		"data":    cleanToken,
+		"data":    responseToken,
 	})
 }
 

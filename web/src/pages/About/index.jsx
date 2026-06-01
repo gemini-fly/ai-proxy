@@ -1,11 +1,32 @@
+/*
+Copyright (C) 2025 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+
 import React, { useEffect, useState } from 'react';
 import { API, showError } from '../../helpers';
 import { marked } from 'marked';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { useActualTheme } from '../../context/Theme';
+import { siteContent } from '@siteContent';
 
 /* ── Design tokens (same as Home) ─────────────────────── */
-const C = {
+const DARK_C = {
   bg:         '#06080f',
   surface:    '#0d1117',
   border:     'rgba(255,255,255,0.07)',
@@ -16,22 +37,51 @@ const C = {
   text1:      '#8b949e',
   text2:      '#3d444d',
 };
+const LIGHT_C = {
+  bg:         '#ffffff',
+  surface:    '#f6f8fa',
+  border:     'rgba(0,0,0,0.08)',
+  primary:    '#06d6a0',
+  primaryDim: 'rgba(6,214,160,0.10)',
+  accent:     '#ffd166',
+  text0:      '#1c1c1e',
+  text1:      '#636366',
+  text2:      '#8a8a8e',
+};
+
+const BRAND_LOGO = '/logo.png';
+const ASSETS = {
+  suite: '/shanview-assets/ops-ldap-suite.svg',
+  platform: '/shanview-assets/ops-platform.svg',
+  directory: '/shanview-assets/ldap-directory.svg',
+};
 
 /* ── Highlights shown when admin hasn't set custom content ─ */
 const HIGHLIGHTS = [
-  { icon: '🌐', color: '#06d6a0', title: '30+ 大模型全覆盖',
-    desc: '国内文心、星火、通义、GLM、混元，国际 OpenAI、Claude、Gemini、Grok，一站全搞定。' },
-  { icon: '⚡', color: '#ffd166', title: '统一 OpenAI 接口',
-    desc: '零代码改造，仅替换 Base URL，兼容所有 OpenAI SDK、LangChain、AutoGen 等工具链。' },
-  { icon: '👥', color: '#a78bfa', title: '企业级团队管理',
+  { icon: ASSETS.suite, color: '#06d6a0', ...siteContent.about.coverageFeature },
+  { icon: ASSETS.platform, color: '#ffd166', ...siteContent.about.apiFeature },
+  { icon: ASSETS.directory, color: '#a78bfa', title: '企业级团队管理',
     desc: '为每个员工颁发独立 API Key，设置用量上限，一键查看团队全员的实时调用与费用明细。' },
-  { icon: '🔒', color: '#fb923c', title: '安全可靠',
+  { icon: BRAND_LOGO, color: '#fb923c', title: '安全可靠',
     desc: '全链路 HTTPS，Key 加密存储，访问日志完整记录，企业数据不出域。' },
 ];
+
+const FeatureIcon = ({ src, color }) => (
+  <span style={{
+    width: 44, height: 44, display: 'inline-flex', alignItems: 'center',
+    justifyContent: 'center', borderRadius: 12, marginBottom: 12,
+    background: 'rgba(255,255,255,0.94)', border: `1px solid ${color}33`,
+    boxShadow: `0 10px 24px ${color}1f`,
+  }}>
+    <img src={src} alt='' style={{ width: 32, height: 32, objectFit: 'contain' }} />
+  </span>
+);
 
 /* ── Default About page ─────────────────────────────────── */
 const DefaultAbout = () => {
   const currentYear = new Date().getFullYear();
+  const actualTheme = useActualTheme();
+  const C = actualTheme === 'dark' ? DARK_C : LIGHT_C;
 
   return (
     <div style={{ background: C.bg, minHeight: 'calc(100vh - 60px)', color: C.text0,
@@ -48,6 +98,10 @@ const DefaultAbout = () => {
 
         {/* ── Brand Header ── */}
         <div style={{ textAlign: 'center', marginBottom: 64 }}>
+          <img src={BRAND_LOGO} alt='' style={{
+            width: 72, height: 72, objectFit: 'contain', borderRadius: 18,
+            margin: '0 auto 20px', boxShadow: '0 14px 34px rgba(3,158,252,0.18)',
+          }} />
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
             padding: '5px 14px', borderRadius: 40, marginBottom: 24,
@@ -58,15 +112,13 @@ const DefaultAbout = () => {
           </div>
 
           <h1 style={{ fontSize: 52, fontWeight: 800, lineHeight: 1.1,
-            marginBottom: 16, letterSpacing: '-0.025em' }}>
-            <span style={{ fontFamily: 'ui-monospace,monospace', color: C.primary }}>懂点</span>
-            <span style={{ fontFamily: 'ui-monospace,monospace' }}>Code</span>
+            marginBottom: 16, letterSpacing: 0 }}>
+            <span style={{ fontFamily: 'ui-monospace,monospace', color: C.primary }}>闪域</span>
           </h1>
 
           <p style={{ fontSize: 18, color: C.text1, maxWidth: 520, margin: '0 auto',
             lineHeight: 1.75 }}>
-            专为开发者和企业团队打造的国内外 AI 大模型统一接入平台，
-            让每一次 AI 调用都简单、透明、可控。
+            {siteContent.about.intro}
           </p>
         </div>
 
@@ -74,11 +126,11 @@ const DefaultAbout = () => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 16,
           marginBottom: 56 }}>
           {HIGHLIGHTS.map((f) => (
-            <div key={f.title} className='ddcode-feature-card' style={{
+            <div key={f.title} className='shanview-feature-card' style={{
               padding: '24px 28px', background: C.surface,
               border: `1px solid ${C.border}`, borderRadius: 14,
             }}>
-              <div style={{ fontSize: 30, marginBottom: 12 }}>{f.icon}</div>
+              <FeatureIcon src={f.icon} color={f.color} />
               <h3 style={{ fontSize: 16, fontWeight: 700, color: f.color, marginBottom: 8 }}>
                 {f.title}
               </h3>
@@ -96,7 +148,7 @@ const DefaultAbout = () => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 24,
           marginBottom: 56, textAlign: 'center' }}>
           {[
-            { label: '联系邮箱', value: 'support@ddcode.ai', href: 'mailto:support@ddcode.ai' },
+            { label: '联系邮箱', value: 'contactus@shanview.cn', href: 'mailto:contactus@shanview.cn' },
             { label: '服务状态', value: '99.9% 可用性',      href: null },
             { label: '开始使用', value: '免费注册',           href: '/register', internal: true },
           ].map((item) => (
@@ -129,7 +181,7 @@ const DefaultAbout = () => {
         {/* ── Copyright ── */}
         <div style={{ textAlign: 'center' }}>
           <p style={{ fontSize: 13, color: C.text2 }}>
-            © {currentYear} 懂点Code. 保留所有权利。
+            © {currentYear} 闪域. 保留所有权利。
           </p>
         </div>
       </div>
