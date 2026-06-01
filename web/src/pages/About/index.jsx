@@ -24,6 +24,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useActualTheme } from '../../context/Theme';
 import { siteContent } from '@siteContent';
+import { allowCustomMarketingContent } from '@siteRegion';
 
 /* ── Design tokens (same as Home) ─────────────────────── */
 const DARK_C = {
@@ -196,6 +197,12 @@ const About = () => {
   const [aboutLoaded, setAboutLoaded] = useState(false);
 
   const displayAbout = async () => {
+    if (!allowCustomMarketingContent) {
+      localStorage.removeItem('about');
+      setAbout('');
+      setAboutLoaded(true);
+      return;
+    }
     setAbout(localStorage.getItem('about') || '');
     const res = await API.get('/api/about');
     const { success, message, data } = res.data;

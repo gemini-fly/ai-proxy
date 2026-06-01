@@ -20,42 +20,13 @@ For commercial licensing, please contact support@quantumnous.com
 import { useState, useEffect, useMemo, useContext, useRef } from 'react';
 import { StatusContext } from '../../context/Status';
 import { API } from '../../helpers';
+import { DEFAULT_ADMIN_CONFIG } from '@sidebarDefaults';
 
 // 创建一个全局事件系统来同步所有useSidebar实例
 const sidebarEventTarget = new EventTarget();
 const SIDEBAR_REFRESH_EVENT = 'sidebar-refresh';
 
-export const DEFAULT_ADMIN_CONFIG = {
-  chat: {
-    enabled: true,
-    playground: true,
-    chat: true,
-  },
-  console: {
-    enabled: true,
-    detail: true,
-    token: true,
-    log: true,
-    midjourney: true,
-    task: true,
-  },
-  personal: {
-    enabled: true,
-    topup: true,
-    personal: true,
-    security: true,
-    contract: true,
-  },
-  admin: {
-    enabled: true,
-    channel: true,
-    models: true,
-    deployment: true,
-    redemption: true,
-    user: true,
-    setting: true,
-  },
-};
+export { DEFAULT_ADMIN_CONFIG };
 
 const deepClone = (value) => JSON.parse(JSON.stringify(value));
 

@@ -44,6 +44,7 @@ import EditTokenModal from './modals/EditTokenModal';
 import { useTokensData } from '../../../hooks/tokens/useTokensData';
 import { useIsMobile } from '../../../hooks/common/useIsMobile';
 import { createCardProPagination } from '../../../helpers/utils';
+import { filterRegionModels } from '@siteRegion';
 
 function TokensPage() {
   const tokensData = useTokensData();
@@ -74,7 +75,7 @@ function TokensPage() {
       const { success, message, data } = res.data || {};
       if (success) {
         const categories = getModelCategories(tokensData.t);
-        const options = (data || []).map((model) => {
+        const options = filterRegionModels(data || []).map((model) => {
           let icon = null;
           for (const [key, category] of Object.entries(categories)) {
             if (key !== 'all' && category.filter({ model_name: model })) {

@@ -18,7 +18,42 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
-import { Qwen, Volcengine } from '@lobehub/icons';
+
+const iconToneMap = {
+  qwen: {
+    background: '#eef2ff',
+    color: '#3451d1',
+  },
+  doubao: {
+    background: '#ecfeff',
+    color: '#087f8c',
+  },
+};
+
+function ProviderBadge({ label, tone = 'qwen' }) {
+  const toneStyle = iconToneMap[tone] || iconToneMap.qwen;
+
+  return (
+    <span
+      aria-hidden='true'
+      style={{
+        alignItems: 'center',
+        background: toneStyle.background,
+        borderRadius: '50%',
+        color: toneStyle.color,
+        display: 'inline-flex',
+        fontSize: 12,
+        fontWeight: 700,
+        height: 26,
+        justifyContent: 'center',
+        lineHeight: 1,
+        width: 26,
+      }}
+    >
+      {label}
+    </span>
+  );
+}
 
 export const siteContent = {
   home: {
@@ -36,12 +71,12 @@ export const siteContent = {
     modelSectionLabel: '阿里与豆包系主流大模型',
     modelRows: [
       [
-        { icon: <Qwen.Color size={26} />, name: '阿里通义' },
-        { icon: <Qwen.Color size={26} />, name: '通义千问' },
-        { icon: <Qwen.Color size={26} />, name: 'Qwen Coder' },
-        { icon: <Volcengine.Color size={26} />, name: '字节豆包' },
-        { icon: <Volcengine.Color size={26} />, name: '火山方舟' },
-        { icon: <Volcengine.Color size={26} />, name: '豆包视频' },
+        { icon: <ProviderBadge label='通' tone='qwen' />, name: '阿里通义' },
+        { icon: <ProviderBadge label='千' tone='qwen' />, name: '通义千问' },
+        { icon: <ProviderBadge label='Q' tone='qwen' />, name: 'Qwen Coder' },
+        { icon: <ProviderBadge label='豆' tone='doubao' />, name: '字节豆包' },
+        { icon: <ProviderBadge label='火' tone='doubao' />, name: '火山方舟' },
+        { icon: <ProviderBadge label='视' tone='doubao' />, name: '豆包视频' },
       ],
     ],
     terminal: [

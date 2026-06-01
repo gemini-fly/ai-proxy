@@ -17,4 +17,21 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-export { CHANNEL_OPTIONS } from '@siteRegion';
+import React from 'react';
+import { Empty, Button } from '@douyinfe/semi-ui';
+import { Link } from 'react-router-dom';
+
+const RegionUnavailable = () => (
+  <div className='mt-[60px] min-h-[calc(100vh-60px)] flex items-center justify-center px-4'>
+    <Empty
+      title='当前站点未开放此功能'
+      description='请使用已开放的控制台功能。'
+    >
+      <Link to='/console'>
+        <Button type='primary'>返回控制台</Button>
+      </Link>
+    </Empty>
+  </div>
+);
+
+export default RegionUnavailable;

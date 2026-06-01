@@ -17,19 +17,28 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
+import { enforcedBranding, filterRegionChats } from '@siteRegion';
+
 export function setStatusData(data) {
+  const systemName = enforcedBranding.enabled
+    ? enforcedBranding.systemName
+    : data.system_name;
+  const logo = enforcedBranding.enabled ? enforcedBranding.logo : data.logo;
+  const footerHTML = enforcedBranding.enabled
+    ? enforcedBranding.footerHTML
+    : data.footer_html;
+
   localStorage.setItem('status', JSON.stringify(data));
-  localStorage.setItem('system_name', data.system_name);
-  localStorage.setItem('logo', data.logo);
-  if (data.system_name) {
-    document.title = data.system_name;
+  localStorage.setItem('system_name', systemName);
+  localStorage.setItem('logo', logo);
+  if (systemName) {
+    document.title = systemName;
   }
-  const logo = data.logo || '/logo.png';
   const linkElement = document.querySelector("link[rel~='icon']");
   if (linkElement) {
-    linkElement.href = logo;
+    linkElement.href = logo || '/logo.png';
   }
-  localStorage.setItem('footer_html', data.footer_html);
+  localStorage.setItem('footer_html', footerHTML || '');
   localStorage.setItem('quota_per_unit', data.quota_per_unit);
   // 兼容：保留旧字段，同时写入新的额度展示类型
   localStorage.setItem('display_in_currency', data.display_in_currency);
@@ -37,7 +46,7 @@ export function setStatusData(data) {
   localStorage.setItem('enable_drawing', data.enable_drawing);
   localStorage.setItem('enable_task', data.enable_task);
   localStorage.setItem('enable_data_export', data.enable_data_export);
-  localStorage.setItem('chats', JSON.stringify(data.chats));
+  localStorage.setItem('chats', JSON.stringify(filterRegionChats(data.chats)));
   localStorage.setItem(
     'data_export_default_time',
     data.data_export_default_time,

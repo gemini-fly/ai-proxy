@@ -37,6 +37,7 @@ import {
 import { UserContext } from '../../context/User';
 import { StatusContext } from '../../context/Status';
 import { useLocation } from 'react-router-dom';
+import { footerHiddenPaths } from '@sidebarConfig';
 const { Sider, Content, Header } = Layout;
 
 const PageLayout = () => {
@@ -48,19 +49,7 @@ const PageLayout = () => {
   const { i18n } = useTranslation();
   const location = useLocation();
 
-  const cardProPages = [
-    '/console/channel',
-    '/console/log',
-    '/console/redemption',
-    '/console/user',
-    '/console/token',
-    '/console/midjourney',
-    '/console/task',
-    '/console/models',
-    '/pricing',
-  ];
-
-  const shouldHideFooter = cardProPages.includes(location.pathname);
+  const shouldHideFooter = footerHiddenPaths.includes(location.pathname);
 
   const shouldInnerPadding =
     location.pathname.includes('/console') &&

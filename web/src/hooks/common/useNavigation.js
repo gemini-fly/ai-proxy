@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import { useMemo } from 'react';
+import { isHeaderNavModuleEnabled } from '@siteRegion';
 
 export const useNavigation = (t, docsLink, headerNavModules) => {
   const mainNavLinks = useMemo(() => {
@@ -57,6 +58,8 @@ export const useNavigation = (t, docsLink, headerNavModules) => {
 
     // 根据配置过滤导航链接
     return allLinks.filter((link) => {
+      if (!isHeaderNavModuleEnabled(link.itemKey)) return false;
+
       if (link.itemKey === 'pricing') {
         // 支持新的pricing配置格式
         return typeof modules.pricing === 'object'

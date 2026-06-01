@@ -17,4 +17,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-export { CHANNEL_OPTIONS } from '@siteRegion';
+import { lazy } from 'react';
+
+export const Pricing = lazy(() => import('../pages/Pricing'));

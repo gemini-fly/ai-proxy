@@ -17,4 +17,20 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-export { CHANNEL_OPTIONS } from '@siteRegion';
+import enTranslation from './locales/en.json';
+import frTranslation from './locales/fr.json';
+import zhTranslation from './locales/zh.json';
+import ruTranslation from './locales/ru.json';
+import jaTranslation from './locales/ja.json';
+import viTranslation from './locales/vi.json';
+
+export const resources = {
+  en: enTranslation,
+  zh: zhTranslation,
+  fr: frTranslation,
+  ru: ruTranslation,
+  ja: jaTranslation,
+  vi: viTranslation,
+};
+
+export const supportedLngs = ['en', 'zh', 'fr', 'ru', 'ja', 'vi'];

@@ -33,12 +33,12 @@ import {
   stringToColor,
   getLogOther,
   renderModelTag,
-  renderClaudeLogContent,
   renderLogContent,
   renderModelPriceSimple,
   renderAudioModelPrice,
-  renderClaudeModelPrice,
   renderModelPrice,
+  COMPAT_LOG_KEY,
+  DEFAULT_PRICE_PROVIDER,
 } from '../../../helpers';
 import { IconHelpCircle } from '@douyinfe/semi-icons';
 import { Route } from 'lucide-react';
@@ -541,7 +541,7 @@ export const getLogsColumns = ({
             </Typography.Paragraph>
           );
         }
-        let content = other?.claude
+        let content = other?.[COMPAT_LOG_KEY]
           ? renderModelPriceSimple(
               other.model_ratio,
               other.model_price,
@@ -558,7 +558,7 @@ export const getLogsColumns = ({
               false,
               1.0,
               other?.is_system_prompt_overwritten,
-              'claude',
+              COMPAT_LOG_KEY,
             )
           : renderModelPriceSimple(
               other.model_ratio,
@@ -576,7 +576,7 @@ export const getLogsColumns = ({
               false,
               1.0,
               other?.is_system_prompt_overwritten,
-              'openai',
+              DEFAULT_PRICE_PROVIDER,
             );
         return (
           <Typography.Paragraph

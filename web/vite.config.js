@@ -40,6 +40,30 @@ const siteContentPath = path.resolve(
   __dirname,
   `./src/config/siteContent.${siteRegion}.jsx`,
 );
+const siteRegionPath = path.resolve(
+  __dirname,
+  `./src/config/siteRegion.${siteRegion}.jsx`,
+);
+const i18nResourcesPath = path.resolve(
+  __dirname,
+  `./src/i18n/resources.${siteRegion}.js`,
+);
+const regionalPagesPath = path.resolve(
+  __dirname,
+  `./src/config/regionalPages.${siteRegion}.jsx`,
+);
+const consoleRoutesPath = path.resolve(
+  __dirname,
+  `./src/config/consoleRoutes.${siteRegion}.jsx`,
+);
+const sidebarConfigPath = path.resolve(
+  __dirname,
+  `./src/config/sidebarConfig.${siteRegion}.js`,
+);
+const sidebarDefaultsPath = path.resolve(
+  __dirname,
+  `./src/config/sidebarDefaults.${siteRegion}.js`,
+);
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -47,6 +71,12 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@siteContent': siteContentPath,
+      '@siteRegion': siteRegionPath,
+      '@i18nResources': i18nResourcesPath,
+      '@regionalPages': regionalPagesPath,
+      '@consoleRoutes': consoleRoutesPath,
+      '@sidebarConfig': sidebarConfigPath,
+      '@sidebarDefaults': sidebarDefaultsPath,
     },
   },
   plugins: [

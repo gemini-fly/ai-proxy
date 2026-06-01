@@ -30,6 +30,10 @@ import { IconCopy } from '@douyinfe/semi-icons';
 import { Link } from 'react-router-dom';
 import NoticeModal from '../../components/layout/NoticeModal';
 import { siteContent } from '@siteContent';
+import {
+  allowCustomMarketingContent,
+  isHeaderNavModuleEnabled,
+} from '@siteRegion';
 
 /* ── Design tokens ─────────────────────────────────────────── */
 const DARK_C = {
@@ -120,6 +124,12 @@ const Home = () => {
 
   /* load custom home page content */
   const displayHomePageContent = async () => {
+    if (!allowCustomMarketingContent) {
+      localStorage.removeItem('home_page_content');
+      setHomePageContent('');
+      setHomePageContentLoaded(true);
+      return;
+    }
     setHomePageContent(localStorage.getItem('home_page_content') || '');
     const res = await API.get('/api/home_page_content');
     const { success, message, data } = res.data;
@@ -447,13 +457,15 @@ const Home = () => {
                     免费注册
                   </button>
                 </Link>
-                <Link to='/pricing'>
-                  <button style={{ padding: '14px 32px', background: 'transparent',
-                    color: C.text0, border: `1px solid ${C.border}`, borderRadius: 12,
-                    fontSize: 16, fontWeight: 600, cursor: 'pointer' }}>
-                    查看价格
-                  </button>
-                </Link>
+                {isHeaderNavModuleEnabled('pricing') && (
+                  <Link to='/pricing'>
+                    <button style={{ padding: '14px 32px', background: 'transparent',
+                      color: C.text0, border: `1px solid ${C.border}`, borderRadius: 12,
+                      fontSize: 16, fontWeight: 600, cursor: 'pointer' }}>
+                      查看价格
+                    </button>
+                  </Link>
+                )}
               </div>
             </div>
           </section>

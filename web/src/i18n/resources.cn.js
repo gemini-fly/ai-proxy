@@ -17,4 +17,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-export { CHANNEL_OPTIONS } from '@siteRegion';
+export const resources = {
+  zh: { translation: {} },
+};
+
+export const supportedLngs = ['zh'];

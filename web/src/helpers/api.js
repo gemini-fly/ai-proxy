@@ -25,6 +25,7 @@ import {
 } from './utils';
 import axios from 'axios';
 import { MESSAGE_ROLES } from '../constants/playground.constants';
+import { filterRegionModels } from '@siteRegion';
 
 export let API = axios.create({
   baseURL: import.meta.env.VITE_REACT_APP_SERVER_URL
@@ -168,7 +169,7 @@ export const handleApiError = (error, response = null) => {
 
 // 处理模型数据
 export const processModelsData = (data, currentModel) => {
-  const modelOptions = data.map((model) => ({
+  const modelOptions = filterRegionModels(data).map((model) => ({
     label: model,
     value: model,
   }));

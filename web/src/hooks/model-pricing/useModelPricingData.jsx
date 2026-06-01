@@ -23,6 +23,7 @@ import { API, copy, showError, showInfo, showSuccess } from '../../helpers';
 import { Modal } from '@douyinfe/semi-ui';
 import { UserContext } from '../../context/User';
 import { StatusContext } from '../../context/Status';
+import { filterRegionModels } from '@siteRegion';
 
 export const useModelPricingData = () => {
   const { t } = useTranslation();
@@ -186,8 +187,9 @@ export const useModelPricingData = () => {
   };
 
   const setModelsFormat = (models, groupRatio, vendorMap) => {
-    for (let i = 0; i < models.length; i++) {
-      const m = models[i];
+    const visibleModels = filterRegionModels(models);
+    for (let i = 0; i < visibleModels.length; i++) {
+      const m = visibleModels[i];
       m.key = m.model_name;
       m.group_ratio = groupRatio[m.model_name];
 
@@ -198,24 +200,15 @@ export const useModelPricingData = () => {
         m.vendor_description = vendor.description;
       }
     }
-    models.sort((a, b) => {
+    visibleModels.sort((a, b) => {
       return a.quota_type - b.quota_type;
     });
 
-    models.sort((a, b) => {
-      if (a.model_name.startsWith('gpt') && !b.model_name.startsWith('gpt')) {
-        return -1;
-      } else if (
-        !a.model_name.startsWith('gpt') &&
-        b.model_name.startsWith('gpt')
-      ) {
-        return 1;
-      } else {
-        return a.model_name.localeCompare(b.model_name);
-      }
+    visibleModels.sort((a, b) => {
+      return a.model_name.localeCompare(b.model_name);
     });
 
-    setModels(models);
+    setModels(visibleModels);
   };
 
   const loadPricing = async () => {

@@ -494,9 +494,7 @@ const TwoFASetting = ({ t }) => {
               {currentStep === 0 && (
                 <div>
                   <Paragraph className='text-gray-600 dark:text-gray-300 mb-4'>
-                    {t(
-                      '使用认证器应用（如 Google Authenticator、Microsoft Authenticator）扫描下方二维码：',
-                    )}
+                    {t('使用认证器应用扫描下方二维码：')}
                   </Paragraph>
                   <div className='flex justify-center mb-4'>
                     <div className='bg-white p-4 rounded-lg shadow-sm'>

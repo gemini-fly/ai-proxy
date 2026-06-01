@@ -31,14 +31,16 @@ import {
   renderNumber,
   getLogOther,
   copy,
-  renderClaudeLogContent,
+  renderCompatibleLogContent,
   renderLogContent,
   renderAudioModelPrice,
-  renderClaudeModelPrice,
+  renderCompatibleModelPrice,
   renderModelPrice,
+  COMPAT_LOG_KEY,
 } from '../../helpers';
 import { ITEMS_PER_PAGE } from '../../constants';
 import { useTableCompactMode } from '../common/useTableCompactMode';
+import { isRegionModelName } from '@siteRegion';
 
 export const useLogsData = () => {
   const { t } = useTranslation();
@@ -306,17 +308,20 @@ export const useLogsData = () => {
 
   // Format logs data
   const setLogsFormat = (logs) => {
+    const visibleLogs = (logs || []).filter(
+      (log) => !log.model_name || isRegionModelName(log.model_name),
+    );
     let expandDatesLocal = {};
-    for (let i = 0; i < logs.length; i++) {
-      logs[i].timestamp2string = timestamp2string(logs[i].created_at);
-      logs[i].key = logs[i].id;
-      let other = getLogOther(logs[i].other);
+    for (let i = 0; i < visibleLogs.length; i++) {
+      visibleLogs[i].timestamp2string = timestamp2string(visibleLogs[i].created_at);
+      visibleLogs[i].key = visibleLogs[i].id;
+      let other = getLogOther(visibleLogs[i].other);
       let expandDataLocal = [];
 
-      if (isAdminUser && (logs[i].type === 0 || logs[i].type === 2)) {
+      if (isAdminUser && (visibleLogs[i].type === 0 || visibleLogs[i].type === 2)) {
         expandDataLocal.push({
           key: t('渠道信息'),
-          value: `${logs[i].channel} - ${logs[i].channel_name || '[未知]'}`,
+          value: `${visibleLogs[i].channel} - ${visibleLogs[i].channel_name || '[未知]'}`,
         });
       }
       if (other?.ws || other?.audio) {
@@ -349,11 +354,11 @@ export const useLogsData = () => {
           value: other.cache_creation_tokens,
         });
       }
-      if (logs[i].type === 2) {
+      if (visibleLogs[i].type === 2) {
         expandDataLocal.push({
           key: t('日志详情'),
-          value: other?.claude
-            ? renderClaudeLogContent(
+          value: other?.[COMPAT_LOG_KEY]
+            ? renderCompatibleLogContent(
                 other?.model_ratio,
                 other.completion_ratio,
                 other.model_price,
@@ -381,14 +386,14 @@ export const useLogsData = () => {
                 other.file_search_call_count || 0,
               ),
         });
-        if (logs[i]?.content) {
+        if (visibleLogs[i]?.content) {
           expandDataLocal.push({
             key: t('其他详情'),
-            value: logs[i].content,
+            value: visibleLogs[i].content,
           });
         }
       }
-      if (logs[i].type === 2) {
+      if (visibleLogs[i].type === 2) {
         let modelMapped =
           other?.is_model_mapped &&
           other?.upstream_model_name &&
@@ -396,7 +401,7 @@ export const useLogsData = () => {
         if (modelMapped) {
           expandDataLocal.push({
             key: t('请求并计费模型'),
-            value: logs[i].model_name,
+            value: visibleLogs[i].model_name,
           });
           expandDataLocal.push({
             key: t('实际模型'),
@@ -420,10 +425,10 @@ export const useLogsData = () => {
             other?.cache_tokens || 0,
             other?.cache_ratio || 1.0,
           );
-        } else if (other?.claude) {
-          content = renderClaudeModelPrice(
-            logs[i].prompt_tokens,
-            logs[i].completion_tokens,
+        } else if (other?.[COMPAT_LOG_KEY]) {
+          content = renderCompatibleModelPrice(
+            visibleLogs[i].prompt_tokens,
+            visibleLogs[i].completion_tokens,
             other.model_ratio,
             other.model_price,
             other.completion_ratio,
@@ -440,8 +445,8 @@ export const useLogsData = () => {
           );
         } else {
           content = renderModelPrice(
-            logs[i].prompt_tokens,
-            logs[i].completion_tokens,
+            visibleLogs[i].prompt_tokens,
+            visibleLogs[i].completion_tokens,
             other?.model_ratio,
             other?.model_price,
             other?.completion_ratio,
@@ -494,11 +499,11 @@ export const useLogsData = () => {
             value: localCountMode,
         });
       }
-      expandDatesLocal[logs[i].key] = expandDataLocal;
+      expandDatesLocal[visibleLogs[i].key] = expandDataLocal;
     }
 
     setExpandData(expandDatesLocal);
-    setLogs(logs);
+    setLogs(visibleLogs);
   };
 
   // Load logs function
